@@ -1,7 +1,7 @@
 {
   "name": "nova-island",
-  "version": "1.3.0",
-  "description": "A configurable floating desktop island for files, notes, clipboard history, local media, and focus timer.",
+  "version": "1.4.0",
+  "description": "A polished floating desktop island with local tasks, focus sessions, clipboard history, notes, files, and media.",
   "main": "main.js",
   "author": "NOVA",
   "license": "MIT",
@@ -31,6 +31,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "task-utils.js",
       "system-services.js",
       "index.html",
       "assets/**/*",

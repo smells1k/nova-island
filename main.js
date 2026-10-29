@@ -21,10 +21,12 @@ const fs = require('fs');
 const path = require('path');
 const { fileURLToPath, pathToFileURL } = require('node:url');
 const systemServices = require('./system-services');
+const taskUtils = require('./task-utils');
 
 const PRODUCT_NAME = 'NOVA Island';
-const STORE_VERSION = 1;
+const STORE_VERSION = 2;
 const MAX_ITEMS = 180;
+const MAX_TASKS = taskUtils.MAX_TASKS;
 const MAX_BACKUP_BYTES = 128 * 1024 * 1024;
 const MAX_BACKUP_FILE_BYTES = 180 * 1024 * 1024;
 const MEDIA_TYPE_BY_EXTENSION = {
@@ -47,6 +49,8 @@ const DEFAULT_SETTINGS = {
     remainingMs: 25 * 60 * 1000,
     endsAt: 0,
     running: false,
+    taskId: '',
+    taskTitle: '',
   },
 };
 
@@ -54,7 +58,7 @@ let mainWindow = null;
 let tray = null;
 let storePath = '';
 let libraryPath = '';
-let store = { version: STORE_VERSION, settings: { ...DEFAULT_SETTINGS }, items: [] };
+let store = { version: STORE_VERSION, settings: { ...DEFAULT_SETTINGS }, items: [], tasks: [] };
 let expanded = false;
 let isQuitting = false;
 let clipboardTimer = null;
@@ -104,6 +108,8 @@ function normalizeFocusTimer(value) {
     remainingMs: running ? remainingMs : (requestedRunning ? 0 : remainingMs),
     endsAt: running ? endsAt : 0,
     running,
+    taskId: safeString(timer.taskId, 100).trim(),
+    taskTitle: safeString(timer.taskTitle, 180).trim(),
   };
 }
 
@@ -131,6 +137,7 @@ function loadStore() {
     version: STORE_VERSION,
     settings,
     items: items.filter((item) => item && typeof item.id === 'string' && typeof item.kind === 'string'),
+    tasks: taskUtils.normalizeTasks(saved && saved.tasks),
   };
   persistStore();
 }
@@ -204,6 +211,7 @@ function publicState() {
     items: sortedItems().map(publicItem),
     activeMedia: activeMedia ? publicItem(activeMedia) : null,
     storage: getStorageStats(),
+    tasks: (store.tasks || []).map((task) => ({ ...task })),
     settings: { ...store.settings },
     focusTimer: focusTimerSnapshot(),
     expanded,
@@ -293,9 +301,20 @@ function syncCollapsedBounds() {
   }
 }
 
-function updateFocusTimer(action, minutes = 25, mode = 'focus') {
+function updateFocusTimer(action, minutes = 25, mode = 'focus', taskId = '') {
   const timer = normalizeFocusTimer(store.settings.focusTimer);
-  if (action === 'preset') {
+  if (action === 'task') {
+    const task = store.tasks.find((candidate) => candidate.id === String(taskId || '') && !candidate.completed);
+    if (!task) return publicState();
+    timer.mode = 'focus';
+    timer.durationMinutes = 25;
+    timer.durationMs = 25 * 60 * 1000;
+    timer.remainingMs = timer.durationMs;
+    timer.endsAt = Date.now() + timer.durationMs;
+    timer.running = true;
+    timer.taskId = task.id;
+    timer.taskTitle = task.title;
+  } else if (action === 'preset') {
     const durationMinutes = Math.min(180, Math.max(1, Math.round(Number(minutes) || 25)));
     timer.mode = mode === 'break' ? 'break' : 'focus';
     timer.durationMinutes = durationMinutes;
@@ -303,10 +322,14 @@ function updateFocusTimer(action, minutes = 25, mode = 'focus') {
     timer.remainingMs = timer.durationMs;
     timer.endsAt = 0;
     timer.running = false;
+    timer.taskId = '';
+    timer.taskTitle = '';
   } else if (action === 'reset') {
     timer.remainingMs = timer.durationMs;
     timer.endsAt = 0;
     timer.running = false;
+    timer.taskId = '';
+    timer.taskTitle = '';
   } else if (action === 'toggle' && timer.running) {
     timer.remainingMs = Math.max(0, timer.endsAt - Date.now());
     timer.endsAt = 0;
@@ -334,7 +357,10 @@ function tickFocusTimer() {
     persistStore();
     try {
       if (Notification.isSupported()) {
-        new Notification({ title: 'NOVA · фокус завершён', body: timer.mode === 'break' ? 'Перерыв закончен — возвращайся, когда будешь готов.' : 'Отличная работа. Пора сделать короткий перерыв.' }).show();
+        const body = timer.mode === 'break'
+          ? 'Перерыв закончен — возвращайся, когда будешь готов.'
+          : (timer.taskTitle ? `Фокус на задаче «${timer.taskTitle}» завершён. Пора сделать короткий перерыв.` : 'Отличная работа. Пора сделать короткий перерыв.');
+        new Notification({ title: 'NOVA · фокус завершён', body }).show();
       }
     } catch (error) {
       console.warn('[NOVA] Focus notification could not be shown:', error.message);
@@ -1014,9 +1040,10 @@ async function exportBackup() {
       exportedAt: new Date().toISOString(),
       settings: { mediaPlayerItemId: store.settings.mediaPlayerItemId || '' },
       items: backupItems,
+      tasks: store.tasks.map((task) => ({ ...task })),
     };
     await fs.promises.writeFile(result.filePath, JSON.stringify(backup), 'utf8');
-    return { ok: true, message: `Резервная копия создана: ${backupItems.length} элементов.` };
+    return { ok: true, message: `Резервная копия создана: ${backupItems.length} элементов и ${store.tasks.length} задач.` };
   } catch (error) {
     console.error('[NOVA] Backup export failed:', error);
     return { ok: false, message: 'Не удалось создать резервную копию.' };
@@ -1045,6 +1072,17 @@ async function importBackup() {
     if (backup.items.length > MAX_ITEMS * 4) return { ok: false, message: 'В резервной копии слишком много элементов.' };
 
     const allowedKinds = new Set(['file', 'image', 'media', 'note', 'text']);
+    const existingTaskKeys = new Set(store.tasks.map((task) => `${task.title.toLocaleLowerCase('ru-RU')}\u0000${task.dueDate || ''}`));
+    const importedTasks = [];
+    let skippedTasks = 0;
+    for (const record of (Array.isArray(backup.tasks) ? backup.tasks.slice(0, MAX_TASKS * 4) : [])) {
+      const task = taskUtils.normalizeTask(record);
+      if (!task) { skippedTasks += 1; continue; }
+      const key = `${task.title.toLocaleLowerCase('ru-RU')}\u0000${task.dueDate || ''}`;
+      if (existingTaskKeys.has(key) || store.tasks.length + importedTasks.length >= MAX_TASKS) { skippedTasks += 1; continue; }
+      existingTaskKeys.add(key);
+      importedTasks.push({ ...task, id: makeId() });
+    }
     const prepared = [];
     const existingKeys = new Set(store.items.map((item) => `${item.kind}\u0000${item.title || ''}\u0000${item.content || ''}\u0000${Number(item.size) || 0}`));
     let totalBytes = 0;
@@ -1074,8 +1112,10 @@ async function importBackup() {
     }
 
     const room = Math.max(0, MAX_ITEMS - store.items.length);
-    if (!room) return { ok: false, message: 'Хранилище заполнено. Удали несколько элементов и повтори импорт.' };
     const imports = prepared.slice(0, room);
+    if (!imports.length && !importedTasks.length && prepared.length && !room) {
+      return { ok: false, message: 'Хранилище заполнено. Удали несколько элементов и повтори импорт.' };
+    }
     const idMap = new Map();
     const importedItems = [];
     for (const entry of imports) {
@@ -1104,14 +1144,15 @@ async function importBackup() {
     }
 
     store.items = [...importedItems, ...store.items].slice(0, MAX_ITEMS);
+    store.tasks = [...importedTasks, ...store.tasks].slice(0, MAX_TASKS);
     const previousActiveId = store.settings.mediaPlayerItemId;
     const restoredActiveId = backup.settings && idMap.get(backup.settings.mediaPlayerItemId);
     if (!previousActiveId && restoredActiveId) store.settings.mediaPlayerItemId = restoredActiveId;
     persistStore();
     syncCollapsedBounds();
     broadcastState();
-    const omitted = skipped + Math.max(0, prepared.length - imports.length);
-    return { ok: true, message: `Импортировано: ${importedItems.length}${omitted ? ` · пропущено: ${omitted}` : ''}. Текущие данные сохранены.` };
+    const omitted = skipped + skippedTasks + Math.max(0, prepared.length - imports.length);
+    return { ok: true, message: `Импортировано: ${importedItems.length} элементов и ${importedTasks.length} задач${omitted ? ` · пропущено: ${omitted}` : ''}. Текущие данные сохранены.` };
   } catch (error) {
     await Promise.all(createdFiles.map((filePath) => fs.promises.unlink(filePath).catch(() => {})));
     console.error('[NOVA] Backup import failed:', error);
@@ -1149,6 +1190,41 @@ async function runSystemQuickAction(action) {
   return { ok: false, message: 'Такого системного действия нет.' };
 }
 
+function addTask(data) {
+  if (store.tasks.length >= MAX_TASKS) return { ok: false, message: `Можно хранить не больше ${MAX_TASKS} задач.`, state: publicState() };
+  const record = data && typeof data === 'object' ? data : {};
+  const task = taskUtils.createTask(record.title, record.dueDate, makeId());
+  if (!task) return { ok: false, message: 'Проверь название и срок задачи.', state: publicState() };
+  store.tasks.unshift(task);
+  persistStore();
+  broadcastState();
+  return { ok: true, message: 'Задача добавлена в план.', state: publicState() };
+}
+
+function toggleTask(id) {
+  const result = taskUtils.toggleTask(store.tasks, id);
+  if (!result.changed) return publicState();
+  store.tasks = result.tasks;
+  persistStore();
+  broadcastState();
+  return publicState();
+}
+
+function deleteTask(id) {
+  const targetId = String(id || '');
+  const before = store.tasks.length;
+  store.tasks = store.tasks.filter((task) => task.id !== targetId);
+  if (store.tasks.length === before) return publicState();
+  const timer = store.settings.focusTimer;
+  if (timer && timer.taskId === targetId) {
+    timer.taskId = '';
+    timer.taskTitle = '';
+  }
+  persistStore();
+  broadcastState();
+  return publicState();
+}
+
 async function setMicMonitoringEnabled(enabled) {
   store.settings.micMonitoringEnabled = Boolean(enabled);
   persistStore();
@@ -1162,7 +1238,10 @@ function registerIpc() {
     setExpanded(Boolean(value));
     return true;
   });
-  ipcMain.handle('nova:focus-timer', (_event, action, minutes, mode) => updateFocusTimer(action, minutes, mode));
+  ipcMain.handle('nova:focus-timer', (_event, action, minutes, mode, taskId) => updateFocusTimer(action, minutes, mode, taskId));
+  ipcMain.handle('nova:add-task', (_event, data) => addTask(data));
+  ipcMain.handle('nova:toggle-task', (_event, id) => toggleTask(id));
+  ipcMain.handle('nova:delete-task', (_event, id) => deleteTask(id));
   ipcMain.handle('nova:export-backup', () => exportBackup());
   ipcMain.handle('nova:import-backup', () => importBackup());
   ipcMain.handle('nova:add-item', (_event, data) => {

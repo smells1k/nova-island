@@ -12,7 +12,10 @@ function subscribe(channel, callback) {
 contextBridge.exposeInMainWorld('novaAPI', Object.freeze({
   getState: () => ipcRenderer.invoke('nova:get-state'),
   setExpanded: (expanded) => ipcRenderer.invoke('nova:set-expanded', Boolean(expanded)),
-  focusTimer: (action, minutes, mode) => ipcRenderer.invoke('nova:focus-timer', action, minutes, mode),
+  focusTimer: (action, minutes, mode, taskId) => ipcRenderer.invoke('nova:focus-timer', action, minutes, mode, taskId),
+  addTask: (data) => ipcRenderer.invoke('nova:add-task', data),
+  toggleTask: (id) => ipcRenderer.invoke('nova:toggle-task', id),
+  deleteTask: (id) => ipcRenderer.invoke('nova:delete-task', id),
   exportBackup: () => ipcRenderer.invoke('nova:export-backup'),
   importBackup: () => ipcRenderer.invoke('nova:import-backup'),
   addItem: (data) => ipcRenderer.invoke('nova:add-item', data),
