@@ -12,6 +12,9 @@ function subscribe(channel, callback) {
 contextBridge.exposeInMainWorld('novaAPI', Object.freeze({
   getState: () => ipcRenderer.invoke('nova:get-state'),
   setExpanded: (expanded) => ipcRenderer.invoke('nova:set-expanded', Boolean(expanded)),
+  focusTimer: (action, minutes, mode) => ipcRenderer.invoke('nova:focus-timer', action, minutes, mode),
+  exportBackup: () => ipcRenderer.invoke('nova:export-backup'),
+  importBackup: () => ipcRenderer.invoke('nova:import-backup'),
   addItem: (data) => ipcRenderer.invoke('nova:add-item', data),
   chooseFiles: () => ipcRenderer.invoke('nova:choose-files'),
   addDroppedFiles: (paths) => ipcRenderer.invoke('nova:add-dropped-files', paths),
@@ -38,5 +41,6 @@ contextBridge.exposeInMainWorld('novaAPI', Object.freeze({
   },
   onState: (callback) => subscribe('nova:state', callback),
   onExpanded: (callback) => subscribe('nova:expanded', callback),
+  onFocusTick: (callback) => subscribe('nova:focus-tick', callback),
   onShortcut: (callback) => subscribe('nova:shortcut', callback),
 }));

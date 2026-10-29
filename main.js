@@ -10,6 +10,7 @@ const {
   ipcMain,
   Menu,
   nativeImage,
+  Notification,
   screen,
   shell,
   Tray,
@@ -22,6 +23,8 @@ const { fileURLToPath, pathToFileURL } = require('node:url');
 const PRODUCT_NAME = 'NOVA Island';
 const STORE_VERSION = 1;
 const MAX_ITEMS = 180;
+const MAX_BACKUP_BYTES = 128 * 1024 * 1024;
+const MAX_BACKUP_FILE_BYTES = 180 * 1024 * 1024;
 const MEDIA_TYPE_BY_EXTENSION = {
   MP3: 'audio', M4A: 'audio', OGG: 'audio', WAV: 'audio', AAC: 'audio', FLAC: 'audio',
   MP4: 'video', MPG: 'video', MPEG: 'video', OGV: 'video', WEBM: 'video', MOV: 'video',
@@ -31,6 +34,14 @@ const DEFAULT_SETTINGS = {
   launchAtLogin: false,
   alwaysOnTop: true,
   mediaPlayerItemId: '',
+  focusTimer: {
+    mode: 'focus',
+    durationMinutes: 25,
+    durationMs: 25 * 60 * 1000,
+    remainingMs: 25 * 60 * 1000,
+    endsAt: 0,
+    running: false,
+  },
 };
 
 let mainWindow = null;
@@ -41,6 +52,7 @@ let store = { version: STORE_VERSION, settings: { ...DEFAULT_SETTINGS }, items: 
 let expanded = false;
 let isQuitting = false;
 let clipboardTimer = null;
+let focusTimerInterval = null;
 let collapseTimer = null;
 let lastClipboardText = '';
 let lastClipboardUriKey = '';
@@ -63,6 +75,32 @@ function ensureDirectories() {
   fs.mkdirSync(libraryPath, { recursive: true });
 }
 
+function normalizeFocusTimer(value) {
+  const timer = value && typeof value === 'object' ? value : {};
+  const durationMinutes = Math.min(180, Math.max(1, Math.round(Number(timer.durationMinutes) || 25)));
+  const durationMs = durationMinutes * 60 * 1000;
+  const endsAt = Math.max(0, Number(timer.endsAt) || 0);
+  const requestedRunning = Boolean(timer.running);
+  const remainingMs = requestedRunning
+    ? Math.max(0, endsAt - Date.now())
+    : Math.min(durationMs, Math.max(0, Number(timer.remainingMs) || durationMs));
+  const running = requestedRunning && remainingMs > 0;
+  return {
+    mode: timer.mode === 'break' ? 'break' : 'focus',
+    durationMinutes,
+    durationMs,
+    remainingMs: running ? remainingMs : (requestedRunning ? 0 : remainingMs),
+    endsAt: running ? endsAt : 0,
+    running,
+  };
+}
+
+function focusTimerSnapshot() {
+  const timer = store.settings.focusTimer || DEFAULT_SETTINGS.focusTimer;
+  const remainingMs = timer.running ? Math.max(0, timer.endsAt - Date.now()) : timer.remainingMs;
+  return { ...timer, remainingMs };
+}
+
 function loadStore() {
   let saved = null;
   try {
@@ -75,6 +113,7 @@ function loadStore() {
     ...DEFAULT_SETTINGS,
     ...(saved && saved.settings && typeof saved.settings === 'object' ? saved.settings : {}),
   };
+  settings.focusTimer = normalizeFocusTimer(settings.focusTimer);
   const items = Array.isArray(saved && saved.items) ? saved.items : [];
   store = {
     version: STORE_VERSION,
@@ -153,6 +192,7 @@ function publicState() {
     activeMedia: activeMedia ? publicItem(activeMedia) : null,
     storage: getStorageStats(),
     settings: { ...store.settings },
+    focusTimer: focusTimerSnapshot(),
     expanded,
   };
 }
@@ -167,16 +207,112 @@ function broadcastState() {
 function makeWindowBounds(isExpanded) {
   const display = screen.getPrimaryDisplay();
   const area = display.workArea;
-  const width = Math.min(isExpanded ? 446 : 198, Math.max(190, area.width - 16));
+  const hasPinnedItems = store.items.some((item) => item.pinned);
+  const hasActiveMedia = Boolean(store.settings.mediaPlayerItemId);
+  const focusRunning = Boolean(store.settings.focusTimer && store.settings.focusTimer.running);
+  const collapsedWidth = hasPinnedItems || hasActiveMedia ? 340 : (focusRunning ? 304 : 224);
+  const width = Math.min(isExpanded ? 446 : collapsedWidth, Math.max(190, area.width - 8));
   const height = isExpanded
     ? Math.max(420, Math.min(666, area.height - 18))
-    : 62;
+    : 64;
   return {
     x: Math.round(area.x + (area.width - width) / 2),
     y: Math.round(area.y + 8),
     width,
-    height: Math.min(height, Math.max(82, area.height - 8)),
+    height: Math.min(height, Math.max(70, area.height - 8)),
   };
+}
+
+function roundedWindowShape(width, height, radius) {
+  const r = Math.max(1, Math.min(Math.floor(radius), Math.floor(width / 2), Math.floor(height / 2)));
+  const rects = [];
+  let active = null;
+  for (let y = 0; y < height; y += 1) {
+    const distance = y < r ? r - y - 0.5 : (y >= height - r ? y - (height - r) + 0.5 : 0);
+    const inset = distance > 0 ? Math.max(0, Math.ceil(r - Math.sqrt(Math.max(0, r * r - distance * distance)))) : 0;
+    const x = inset;
+    const rowWidth = Math.max(1, width - inset * 2);
+    if (active && active.x === x && active.width === rowWidth && active.y + active.height === y) {
+      active.height += 1;
+    } else {
+      active = { x, y, width: rowWidth, height: 1 };
+      rects.push(active);
+    }
+  }
+  return rects;
+}
+
+function applyWindowShape(isExpanded) {
+  if (process.platform !== 'win32' || !mainWindow || mainWindow.isDestroyed() || typeof mainWindow.setShape !== 'function') return;
+  try {
+    const bounds = mainWindow.getBounds();
+    const radius = isExpanded ? 30 : Math.floor(Math.min(bounds.width, bounds.height) / 2);
+    mainWindow.setShape(roundedWindowShape(bounds.width, bounds.height, radius));
+  } catch (error) {
+    console.warn('[NOVA] Could not apply the rounded Windows window region:', error.message);
+  }
+}
+
+function syncCollapsedBounds() {
+  if (!expanded && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setBounds(makeWindowBounds(false), false);
+    applyWindowShape(false);
+  }
+}
+
+function updateFocusTimer(action, minutes = 25, mode = 'focus') {
+  const timer = normalizeFocusTimer(store.settings.focusTimer);
+  if (action === 'preset') {
+    const durationMinutes = Math.min(180, Math.max(1, Math.round(Number(minutes) || 25)));
+    timer.mode = mode === 'break' ? 'break' : 'focus';
+    timer.durationMinutes = durationMinutes;
+    timer.durationMs = durationMinutes * 60 * 1000;
+    timer.remainingMs = timer.durationMs;
+    timer.endsAt = 0;
+    timer.running = false;
+  } else if (action === 'reset') {
+    timer.remainingMs = timer.durationMs;
+    timer.endsAt = 0;
+    timer.running = false;
+  } else if (action === 'toggle' && timer.running) {
+    timer.remainingMs = Math.max(0, timer.endsAt - Date.now());
+    timer.endsAt = 0;
+    timer.running = false;
+  } else if (action === 'toggle') {
+    if (timer.remainingMs <= 0) timer.remainingMs = timer.durationMs;
+    timer.endsAt = Date.now() + timer.remainingMs;
+    timer.running = true;
+  }
+  store.settings.focusTimer = timer;
+  persistStore();
+  syncCollapsedBounds();
+  broadcastState();
+  return publicState();
+}
+
+function tickFocusTimer() {
+  const timer = store.settings.focusTimer;
+  if (!timer || !timer.running) return;
+  const snapshot = focusTimerSnapshot();
+  if (snapshot.remainingMs <= 0) {
+    timer.running = false;
+    timer.remainingMs = 0;
+    timer.endsAt = 0;
+    persistStore();
+    try {
+      if (Notification.isSupported()) {
+        new Notification({ title: 'NOVA · фокус завершён', body: timer.mode === 'break' ? 'Перерыв закончен — возвращайся, когда будешь готов.' : 'Отличная работа. Пора сделать короткий перерыв.' }).show();
+      }
+    } catch (error) {
+      console.warn('[NOVA] Focus notification could not be shown:', error.message);
+    }
+    syncCollapsedBounds();
+    broadcastState();
+    return;
+  }
+  if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()) {
+    mainWindow.webContents.send('nova:focus-tick', snapshot);
+  }
 }
 
 function setExpanded(nextValue, shouldFocus = true) {
@@ -191,6 +327,7 @@ function setExpanded(nextValue, shouldFocus = true) {
 
   if (next) {
     mainWindow.setBounds(makeWindowBounds(true), false);
+    applyWindowShape(true);
     if (!mainWindow.isVisible()) mainWindow.show();
     mainWindow.setAlwaysOnTop(Boolean(store.settings.alwaysOnTop));
     if (store.settings.alwaysOnTop) mainWindow.moveTop();
@@ -206,6 +343,7 @@ function setExpanded(nextValue, shouldFocus = true) {
     collapseTimer = setTimeout(() => {
       if (!expanded && mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.setBounds(makeWindowBounds(false), false);
+        applyWindowShape(false);
       }
     }, 650);
   }
@@ -270,6 +408,7 @@ function createWindow() {
     transparent: true,
     backgroundColor: '#00000000',
     hasShadow: false,
+    ...(process.platform === 'win32' ? { thickFrame: false, roundedCorners: true } : {}),
     resizable: false,
     movable: false,
     minimizable: false,
@@ -277,7 +416,6 @@ function createWindow() {
     fullscreenable: false,
     skipTaskbar: true,
     alwaysOnTop: Boolean(store.settings.alwaysOnTop),
-    roundedCorners: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -288,6 +426,7 @@ function createWindow() {
   });
 
   mainWindow.setAlwaysOnTop(Boolean(store.settings.alwaysOnTop));
+  mainWindow.setBackgroundColor('#00000000');
   mainWindow.setMenu(null);
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
@@ -297,6 +436,7 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     mainWindow.setBounds(makeWindowBounds(false), false);
+    applyWindowShape(false);
     mainWindow.show();
   });
 
@@ -637,6 +777,7 @@ function activateMedia(id) {
 function closeActiveMedia() {
   store.settings.mediaPlayerItemId = '';
   persistStore();
+  syncCollapsedBounds();
   broadcastState();
   return publicState();
 }
@@ -688,12 +829,165 @@ async function copyItemToClipboard(item) {
   }
 }
 
+async function exportBackup() {
+  try {
+    const backupItems = [];
+    let totalBytes = 0;
+    for (const item of store.items) {
+      const backupItem = {
+        id: item.id,
+        kind: item.kind,
+        title: item.title || 'Без названия',
+        content: item.content || '',
+        createdAt: item.createdAt || new Date().toISOString(),
+        pinned: Boolean(item.pinned),
+        source: item.source || 'manual',
+        extension: item.extension || '',
+        size: Number(item.size) || 0,
+        mediaType: item.mediaType || '',
+      };
+      if (item.storedPath && isInsideLibrary(item.storedPath)) {
+        const stat = await fs.promises.stat(item.storedPath);
+        if (totalBytes + stat.size > MAX_BACKUP_BYTES) {
+          return { ok: false, message: 'Экспорт отменён: вложения в резервной копии превышают 128 МБ.' };
+        }
+        const bytes = await fs.promises.readFile(item.storedPath);
+        totalBytes += bytes.length;
+        backupItem.blob = { name: path.basename(item.storedPath), data: bytes.toString('base64') };
+      }
+      backupItems.push(backupItem);
+    }
+
+    const defaultName = `NOVA-backup-${new Date().toISOString().slice(0, 10)}.nova.json`;
+    const options = {
+      title: 'Экспорт резервной копии NOVA',
+      defaultPath: path.join(app.getPath('documents'), defaultName),
+      filters: [{ name: 'Резервная копия NOVA', extensions: ['json'] }],
+    };
+    const result = mainWindow && !mainWindow.isDestroyed()
+      ? await dialog.showSaveDialog(mainWindow, options)
+      : await dialog.showSaveDialog(options);
+    if (result.canceled || !result.filePath) return { ok: false, message: 'Экспорт отменён.' };
+    const backup = {
+      format: 'nova-backup',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      settings: { mediaPlayerItemId: store.settings.mediaPlayerItemId || '' },
+      items: backupItems,
+    };
+    await fs.promises.writeFile(result.filePath, JSON.stringify(backup), 'utf8');
+    return { ok: true, message: `Резервная копия создана: ${backupItems.length} элементов.` };
+  } catch (error) {
+    console.error('[NOVA] Backup export failed:', error);
+    return { ok: false, message: 'Не удалось создать резервную копию.' };
+  }
+}
+
+async function importBackup() {
+  let createdFiles = [];
+  try {
+    const options = {
+      title: 'Импорт резервной копии NOVA',
+      properties: ['openFile'],
+      filters: [{ name: 'Резервная копия NOVA', extensions: ['json'] }],
+    };
+    const result = mainWindow && !mainWindow.isDestroyed()
+      ? await dialog.showOpenDialog(mainWindow, options)
+      : await dialog.showOpenDialog(options);
+    if (result.canceled || !result.filePaths.length) return { ok: false, message: 'Импорт отменён.' };
+    const backupPath = result.filePaths[0];
+    const stat = await fs.promises.stat(backupPath);
+    if (stat.size > MAX_BACKUP_FILE_BYTES) return { ok: false, message: 'Файл резервной копии слишком большой (лимит 180 МБ).' };
+    const backup = JSON.parse(await fs.promises.readFile(backupPath, 'utf8'));
+    if (!backup || backup.format !== 'nova-backup' || backup.version !== 1 || !Array.isArray(backup.items)) {
+      return { ok: false, message: 'Это не резервная копия NOVA.' };
+    }
+    if (backup.items.length > MAX_ITEMS * 4) return { ok: false, message: 'В резервной копии слишком много элементов.' };
+
+    const allowedKinds = new Set(['file', 'image', 'media', 'note', 'text']);
+    const prepared = [];
+    const existingKeys = new Set(store.items.map((item) => `${item.kind}\u0000${item.title || ''}\u0000${item.content || ''}\u0000${Number(item.size) || 0}`));
+    let totalBytes = 0;
+    let skipped = 0;
+    for (const record of backup.items.slice(0, MAX_ITEMS * 4)) {
+      if (!record || !allowedKinds.has(record.kind)) { skipped += 1; continue; }
+      const title = safeString(record.title || 'Импортированный элемент', 120);
+      const content = safeString(record.content || '');
+      let bytes = null;
+      let fileName = '';
+      let dedupeKey = `${record.kind}\u0000${title}\u0000${content}\u0000${Number(record.size) || 0}`;
+      if (record.blob && typeof record.blob.data === 'string') {
+        if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(record.blob.data)) { skipped += 1; continue; }
+        bytes = Buffer.from(record.blob.data, 'base64');
+        totalBytes += bytes.length;
+        if (totalBytes > MAX_BACKUP_BYTES) return { ok: false, message: 'Импорт отменён: вложения превышают лимит 128 МБ.' };
+        fileName = sanitizeFileName(record.blob.name || title || 'file');
+        dedupeKey = `${record.kind}\u0000${title}\u0000\u0000${bytes.length}`;
+      } else if (['file', 'image', 'media'].includes(record.kind)) {
+        skipped += 1;
+        continue;
+      }
+      if (existingKeys.has(dedupeKey)) { skipped += 1; continue; }
+      existingKeys.add(dedupeKey);
+      const createdAt = Number.isNaN(new Date(record.createdAt).getTime()) ? new Date().toISOString() : new Date(record.createdAt).toISOString();
+      prepared.push({ record, title, content, bytes, fileName, createdAt });
+    }
+
+    const room = Math.max(0, MAX_ITEMS - store.items.length);
+    if (!room) return { ok: false, message: 'Хранилище заполнено. Удали несколько элементов и повтори импорт.' };
+    const imports = prepared.slice(0, room);
+    const idMap = new Map();
+    const importedItems = [];
+    for (const entry of imports) {
+      const id = makeId();
+      const item = {
+        id,
+        kind: entry.record.kind,
+        title: entry.title || 'Импортированный элемент',
+        content: entry.content,
+        createdAt: entry.createdAt,
+        pinned: Boolean(entry.record.pinned),
+        source: 'import',
+        extension: safeString(entry.record.extension || '', 12).toUpperCase(),
+        size: Number(entry.record.size) || 0,
+        mediaType: entry.record.mediaType === 'video' ? 'video' : (entry.record.mediaType === 'audio' ? 'audio' : ''),
+      };
+      if (entry.bytes) {
+        const targetPath = path.join(libraryPath, `${id}-${entry.fileName}`);
+        await fs.promises.writeFile(targetPath, entry.bytes, { flag: 'wx' });
+        createdFiles.push(targetPath);
+        item.storedPath = targetPath;
+        item.size = entry.bytes.length;
+      }
+      if (typeof entry.record.id === 'string') idMap.set(entry.record.id, id);
+      importedItems.push(item);
+    }
+
+    store.items = [...importedItems, ...store.items].slice(0, MAX_ITEMS);
+    const previousActiveId = store.settings.mediaPlayerItemId;
+    const restoredActiveId = backup.settings && idMap.get(backup.settings.mediaPlayerItemId);
+    if (!previousActiveId && restoredActiveId) store.settings.mediaPlayerItemId = restoredActiveId;
+    persistStore();
+    syncCollapsedBounds();
+    broadcastState();
+    const omitted = skipped + Math.max(0, prepared.length - imports.length);
+    return { ok: true, message: `Импортировано: ${importedItems.length}${omitted ? ` · пропущено: ${omitted}` : ''}. Текущие данные сохранены.` };
+  } catch (error) {
+    await Promise.all(createdFiles.map((filePath) => fs.promises.unlink(filePath).catch(() => {})));
+    console.error('[NOVA] Backup import failed:', error);
+    return { ok: false, message: 'Не удалось прочитать или восстановить резервную копию.' };
+  }
+}
+
 function registerIpc() {
   ipcMain.handle('nova:get-state', () => publicState());
   ipcMain.handle('nova:set-expanded', (_event, value) => {
     setExpanded(Boolean(value));
     return true;
   });
+  ipcMain.handle('nova:focus-timer', (_event, action, minutes, mode) => updateFocusTimer(action, minutes, mode));
+  ipcMain.handle('nova:export-backup', () => exportBackup());
+  ipcMain.handle('nova:import-backup', () => importBackup());
   ipcMain.handle('nova:add-item', (_event, data) => {
     if (!data || typeof data !== 'object') return { ok: false };
     const item = addTextItem(data.kind, data.title, data.content, data.source || 'manual');
@@ -735,6 +1029,8 @@ function registerIpc() {
     if (item) {
       item.pinned = !item.pinned;
       persistStore();
+      if (item.pinned) setExpanded(true);
+      else syncCollapsedBounds();
       broadcastState();
     }
     return publicState();
@@ -748,6 +1044,7 @@ function registerIpc() {
       await fs.promises.unlink(item.storedPath).catch(() => {});
     }
     persistStore();
+    syncCollapsedBounds();
     broadcastState();
     return publicState();
   });
@@ -760,6 +1057,7 @@ function registerIpc() {
       return Promise.resolve();
     }));
     persistStore();
+    syncCollapsedBounds();
     broadcastState();
     return publicState();
   });
@@ -821,12 +1119,14 @@ app.whenReady().then(async () => {
   });
 
   clipboardTimer = setInterval(pollClipboard, 900);
+  focusTimerInterval = setInterval(tickFocusTimer, 1000);
   app.on('activate', () => setExpanded(true));
 });
 
 app.on('before-quit', () => {
   isQuitting = true;
   if (clipboardTimer) clearInterval(clipboardTimer);
+  if (focusTimerInterval) clearInterval(focusTimerInterval);
   if (collapseTimer) clearTimeout(collapseTimer);
   globalShortcut.unregisterAll();
 });

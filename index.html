@@ -27,6 +27,8 @@
       -webkit-font-smoothing: antialiased;
       user-select: none;
     }
+    :root[data-theme="cyan"] { --violet:#77ddff; --mint:#9affdc; --peach:#b8d5ff; }
+    :root[data-theme="sunset"] { --violet:#ffc08b; --mint:#ffd58b; --peach:#ff9eac; }
 
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; }
@@ -36,15 +38,16 @@
     button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid rgba(181,168,255,.82); outline-offset: 2px; }
 
     #surface {
-      width: 100%; height: 100%; padding: 8px;
+      width: 100%; height: 100%; padding: 0;
       display: flex; justify-content: center; align-items: flex-start;
       position: relative;
+      background: transparent;
     }
 
     .island {
       position: relative;
       flex: 0 0 auto;
-      width: 182px; height: 46px;
+      width: 224px; height: 64px; max-width: 100%;
       border: 1px solid rgba(255,255,255,.14);
       border-radius: 999px;
       overflow: hidden;
@@ -86,10 +89,13 @@
       border: 0; background: transparent; width: 100%; height: 100%; padding: 0 12px;
       display: flex; align-items: center; gap: 7px; cursor: pointer; text-align: left;
     }
-    .collapsed-media-toggle { position:absolute; z-index:3; right:7px; top:50%; transform:translateY(-50%); width:28px; height:28px; display:grid; place-items:center; padding:0; border:1px solid rgba(140,233,202,.22); border-radius:50%; color:#a2f0d4; background:rgba(95,196,162,.13); cursor:pointer; box-shadow:0 0 16px rgba(105,218,181,.1); }
+    .collapsed-controls { position:absolute; z-index:3; right:9px; top:50%; transform:translateY(-50%); display:flex; align-items:center; gap:4px; }
+    .collapsed-control { width:30px; height:30px; display:grid; place-items:center; padding:0; border:1px solid rgba(255,255,255,.12); border-radius:50%; color:#d3d0e7; background:rgba(255,255,255,.065); cursor:pointer; transition:background .18s ease, color .18s ease, transform .18s ease; }
+    .collapsed-control:hover { background:rgba(255,255,255,.13); color:#fff; transform:scale(1.06); }
+    .collapsed-media-toggle { border-color:rgba(140,233,202,.22); color:#a2f0d4; background:rgba(95,196,162,.13); box-shadow:0 0 16px rgba(105,218,181,.1); }
     .collapsed-media-toggle:hover { background:rgba(95,196,162,.24); color:#fff; }
-    .collapsed-media-toggle[hidden] { display:none !important; }
-    .island.has-active-media:not(.expanded) .collapsed-button { padding-right:43px; }
+    .collapsed-control[hidden] { display:none !important; }
+    .island.has-collapsed-controls:not(.expanded) .collapsed-button { padding-right:83px; }
     .brand-mark {
       width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center;
       border-radius: 12px; position: relative; overflow: hidden;
@@ -99,19 +105,26 @@
     }
     .brand-mark::after { content:""; position:absolute; inset:-16px; background: radial-gradient(circle at 50% 42%,rgba(185,171,255,.27),transparent 55%); }
     .brand-mark svg { position: relative; z-index: 1; }
-    .collapsed-button .brand-mark { width:26px; height:26px; flex-basis:26px; border-radius:9px; }
-    .collapsed-button .brand-mark svg { width:17px; height:17px; }
-    .collapsed-copy { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
-    .collapsed-title { font-size:10px; font-weight:760; letter-spacing:.19em; line-height:1; }
-    .collapsed-subtitle { display:none; color:#a3a5b1; font-size:8px; letter-spacing:.015em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:112px; }
-    .island.has-active-media:not(.expanded) .collapsed-subtitle { display:block; color:#aaa6ca; }
+    .collapsed-button .brand-mark { width:30px; height:30px; flex-basis:30px; border-radius:10px; }
+    .collapsed-button .brand-mark svg { width:19px; height:19px; }
+    .collapsed-copy { display:flex; flex-direction:column; gap:3px; min-width:0; flex:1; }
+    .collapsed-title { font-size:11px; font-weight:760; letter-spacing:.19em; line-height:1; }
+    .collapsed-subtitle { display:none; align-items:center; gap:5px; min-width:0; color:#a3a5b1; font-size:9px; letter-spacing:.015em; white-space:nowrap; overflow:hidden; max-width:190px; }
+    .island.has-collapsed-preview:not(.expanded) .collapsed-subtitle { display:flex; color:#c4bfdc; }
+    .island.has-collapsed-preview:not(.expanded) { width:340px; }
+    .island.has-focus-timer:not(.has-collapsed-preview):not(.expanded) { width:304px; }
+    .island.has-focus-timer:not(.expanded) .collapsed-subtitle { display:flex; color:#a5efd6; }
+    .collapsed-focus-tag { display:inline-flex; align-items:center; gap:3px; flex:0 0 auto; padding:2px 5px; border:1px solid rgba(140,233,202,.16); border-radius:99px; color:#a5efd6; background:rgba(95,196,162,.09); font-size:8px; font-variant-numeric:tabular-nums; }
+    .collapsed-pin-mark { display:inline-flex; flex:0 0 auto; color:#c5baff; }
+    .collapsed-preview-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .collapsed-preview-more { flex:0 0 auto; color:#888b9b; }
     .island.has-active-media:not(.expanded) .count-badge { display:none; }
     .live-dot { width:6px; height:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 0 3px rgba(140,233,202,.1), 0 0 11px rgba(140,233,202,.65); flex:0 0 auto; animation:live-pulse 2.2s ease-in-out infinite; }
     @keyframes live-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.62; transform:scale(.82); } }
     .count-badge {
-      height:22px; min-width:23px; padding:0 5px; display:grid; place-items:center;
-      border:1px solid rgba(255,255,255,.1); border-radius:99px;
-      background:rgba(255,255,255,.055); color:#d6d5e2; font-size:9px; font-weight:650; letter-spacing:.025em;
+      height:25px; min-width:27px; padding:0 6px; display:grid; place-items:center;
+      border:1px solid rgba(255,255,255,.11); border-radius:99px;
+      background:rgba(255,255,255,.065); color:#e5e2f0; font-size:10px; font-weight:680; letter-spacing:.025em;
     }
 
     .expanded-view {
@@ -156,7 +169,24 @@
     .hero-orbit::after { content:""; position:absolute; top:6px; right:6px; width:5px; height:5px; border-radius:50%; background:var(--mint); box-shadow:0 0 9px rgba(140,233,202,.8); }
     .hero-orbit svg { color:#d1caff; opacity:.92; }
 
-    .quick-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; flex:0 0 auto; margin-top:15px; }
+    .focus-card { flex:0 0 auto; margin-top:13px; padding:8px 9px 7px; border:1px solid rgba(181,168,255,.13); border-radius:15px; background:linear-gradient(115deg,rgba(134,118,236,.105),rgba(255,255,255,.035) 58%,rgba(91,194,165,.045)); box-shadow:inset 0 1px rgba(255,255,255,.035); }
+    .focus-row { display:flex; align-items:center; gap:7px; min-width:0; }
+    .focus-icon { width:28px; height:28px; flex:0 0 28px; display:grid; place-items:center; border:1px solid rgba(181,168,255,.17); border-radius:10px; color:var(--violet); background:rgba(151,132,255,.1); }
+    .focus-copy { min-width:64px; flex:1; display:flex; flex-direction:column; gap:2px; }
+    .focus-label { color:#e4e1f4; font-size:8px; font-weight:760; letter-spacing:.11em; }
+    .focus-status { overflow:hidden; color:#858998; font-size:8px; text-overflow:ellipsis; white-space:nowrap; }
+    .focus-clock { min-width:42px; color:#f3f1fb; font-size:12px; font-weight:690; font-variant-numeric:tabular-nums; letter-spacing:-.04em; text-align:center; }
+    .focus-presets { display:flex; align-items:center; gap:3px; }
+    .focus-preset { min-width:23px; height:22px; padding:0 4px; border:1px solid transparent; border-radius:7px; color:#858998; background:transparent; font-size:8px; cursor:pointer; }
+    .focus-preset:hover, .focus-preset.active { color:#e7e2ff; border-color:rgba(181,168,255,.18); background:rgba(151,132,255,.12); }
+    .focus-toggle, .focus-reset { width:25px; height:25px; flex:0 0 25px; display:grid; place-items:center; padding:0; border:1px solid rgba(181,168,255,.19); border-radius:9px; color:#e4deff; background:rgba(151,132,255,.13); cursor:pointer; }
+    .focus-toggle:hover, .focus-reset:hover { background:rgba(151,132,255,.24); }
+    .focus-reset { width:23px; height:23px; flex-basis:23px; border-color:rgba(255,255,255,.08); color:#989baa; background:rgba(255,255,255,.035); }
+    .focus-progress { height:2px; margin-top:7px; overflow:hidden; border-radius:99px; background:rgba(255,255,255,.065); }
+    .focus-progress > span { display:block; width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--violet),var(--mint)); transition:width .4s linear; }
+    .focus-card.is-running .focus-icon { animation:focus-glow 1.8s ease-in-out infinite; }
+    @keyframes focus-glow { 50% { box-shadow:0 0 17px rgba(181,168,255,.22); } }
+    .quick-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; flex:0 0 auto; margin-top:12px; }
     .quick-action {
       min-width:0; height:47px; padding:0 10px; display:flex; align-items:center; justify-content:center; gap:7px;
       border:1px solid rgba(255,255,255,.075); border-radius:14px;
@@ -304,6 +334,13 @@
     .secondary-button { height:32px; padding:0 10px; border-radius:10px; border:1px solid rgba(255,255,255,.085); background:rgba(255,255,255,.045); color:#c7c8d3; font-size:9px; cursor:pointer; transition:all .18s ease; }
     .secondary-button:hover { border-color:rgba(181,168,255,.22); background:rgba(255,255,255,.08); color:white; }
     .secondary-button.danger { color:#e8a4a7; }
+    .theme-swatches { display:flex; gap:7px; margin-top:10px; }
+    .theme-choice { flex:1; min-width:0; height:34px; display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid rgba(255,255,255,.075); border-radius:10px; color:#999baa; background:rgba(255,255,255,.025); font-size:8px; cursor:pointer; }
+    .theme-choice:hover, .theme-choice.active { border-color:rgba(181,168,255,.28); color:#e4e1f1; background:rgba(151,132,255,.08); }
+    .theme-dot { width:9px; height:9px; flex:0 0 9px; border-radius:50%; box-shadow:0 0 10px currentColor; }
+    .theme-violet { color:#b5a8ff; background:#b5a8ff; }
+    .theme-cyan { color:#77ddff; background:#77ddff; }
+    .theme-sunset { color:#ffc08b; background:#ffc08b; }
 
     .drop-veil { position:absolute; z-index:9; inset:7px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; border-radius:25px; border:1px dashed rgba(174,159,255,.72); background:rgba(14,14,22,.93); backdrop-filter:blur(18px); opacity:0; visibility:hidden; transform:scale(.985); transition:opacity .16s ease,transform .18s ease,visibility .16s; pointer-events:none; }
     .island.drag-active .drop-veil { opacity:1; visibility:visible; transform:scale(1); }
@@ -340,7 +377,9 @@
       .expanded-view { padding-top:12px; padding-bottom:9px; }
       .home-view { padding-top:10px; }
       .hero h1 { font-size:22px; }
-      .quick-actions { margin-top:10px; }
+      .focus-card { margin-top:8px; padding:6px 8px 5px; }
+      .focus-progress { margin-top:4px; }
+      .quick-actions { margin-top:8px; }
       .drop-strip { margin-top:8px; height:44px; }
       .search-wrap { margin-top:8px; }
       .filter-row { margin-top:7px; }
@@ -350,8 +389,11 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { transition-duration:.01ms !important; animation-duration:.01ms !important; scroll-behavior:auto !important; }
     }
-    .island.has-video-media .home-view { padding-top:8px; }
-    .island.has-video-media .quick-actions { margin-top:10px; }
+    .island.has-active-media .focus-card { margin-top:8px; padding:6px 8px 5px; }
+    .island.has-active-media .focus-progress { margin-top:5px; }
+    .island.has-video-media .home-view { padding-top:6px; }
+    .island.has-video-media .focus-card { margin-top:5px; }
+    .island.has-video-media .quick-actions { margin-top:8px; }
     .island.has-video-media .drop-strip { margin-top:7px; }
     .island.has-video-media .search-wrap { margin-top:9px; }
     .island.has-video-media .filter-row { margin-top:7px; }
@@ -377,7 +419,10 @@
           <span class="live-dot" aria-hidden="true"></span>
           <span class="count-badge" id="collapsedCount">00</span>
         </button>
-        <button id="collapsedMediaToggle" class="collapsed-media-toggle" data-action="media-toggle" aria-label="Воспроизвести" title="Воспроизвести" hidden><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.7c0-.8.9-1.3 1.6-.9l9.1 6.1a1.3 1.3 0 0 1 0 2.2l-9.1 6.1c-.7.5-1.6-.1-1.6-.9V5.7Z"/></svg></button>
+        <div id="collapsedControls" class="collapsed-controls">
+          <button id="collapsedFocusToggle" class="collapsed-control collapsed-focus-toggle" data-action="focus-toggle" aria-label="Приостановить таймер" title="Приостановить таймер" hidden><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14M16 5v14"/></svg></button>
+          <button id="collapsedMediaToggle" class="collapsed-control collapsed-media-toggle" data-action="media-toggle" aria-label="Воспроизвести" title="Воспроизвести" hidden><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.7c0-.8.9-1.3 1.6-.9l9.1 6.1a1.3 1.3 0 0 1 0 2.2l-9.1 6.1c-.7.5-1.6-.1-1.6-.9V5.7Z"/></svg></button>
+        </div>
       </div>
 
       <div class="expanded-view">
@@ -444,6 +489,23 @@
             </div>
           </div>
 
+          <div id="focusCard" class="focus-card" aria-label="Таймер фокуса">
+            <div class="focus-row">
+              <span class="focus-icon" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2M12 2v2M4.9 4.9l1.4 1.4m13-1.4-1.4 1.4"/></svg></span>
+              <span class="focus-copy"><span id="focusLabel" class="focus-label">ФОКУС</span><span id="focusStatus" class="focus-status">25 минут · готов к старту</span></span>
+              <strong id="focusClock" class="focus-clock">25:00</strong>
+              <span class="focus-presets" aria-label="Длительность таймера">
+                <button class="focus-preset" data-action="focus-preset" data-focus-minutes="15" title="Фокус на 15 минут">15</button>
+                <button class="focus-preset active" data-action="focus-preset" data-focus-minutes="25" title="Фокус на 25 минут">25</button>
+                <button class="focus-preset" data-action="focus-preset" data-focus-minutes="50" title="Фокус на 50 минут">50</button>
+                <button class="focus-preset" data-action="focus-preset" data-focus-minutes="5" data-focus-mode="break" title="Перерыв на 5 минут">5м</button>
+              </span>
+              <button id="focusToggleButton" class="focus-toggle" data-action="focus-toggle" aria-label="Запустить таймер" title="Запустить таймер"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.7c0-.8.9-1.3 1.6-.9l9.1 6.1a1.3 1.3 0 0 1 0 2.2l-9.1 6.1-1.6-.9V5.7Z"/></svg></button>
+              <button class="focus-reset" data-action="focus-reset" aria-label="Сбросить таймер" title="Сбросить таймер"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg></button>
+            </div>
+            <div class="focus-progress" aria-label="Прогресс таймера"><span id="focusProgress"></span></div>
+          </div>
+
           <div class="quick-actions">
             <button class="quick-action" data-action="new-note"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg><span>Заметка</span></button>
             <button class="quick-action" data-action="new-text"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h7M7 17h4"/></svg><span>Текст</span></button>
@@ -484,6 +546,23 @@
           </div>
           <div class="settings-scroll">
             <div class="setting-card">
+              <div class="setting-title">Внешний вид</div>
+              <div class="setting-description">Выбери подсветку своего острова.</div>
+              <div class="theme-swatches" role="radiogroup" aria-label="Цветовая тема">
+                <button class="theme-choice active" data-theme-choice="violet" role="radio" aria-checked="true"><i class="theme-dot theme-violet"></i><span>Аметист</span></button>
+                <button class="theme-choice" data-theme-choice="cyan" role="radio" aria-checked="false"><i class="theme-dot theme-cyan"></i><span>Океан</span></button>
+                <button class="theme-choice" data-theme-choice="sunset" role="radio" aria-checked="false"><i class="theme-dot theme-sunset"></i><span>Закат</span></button>
+              </div>
+            </div>
+            <div class="setting-card">
+              <div class="setting-title">Резервная копия</div>
+              <div class="setting-description">Экспортирует заметки, закрепления и локальные файлы. Вложения до 128 МБ; импорт добавляет данные, не стирая текущие. Копия может содержать конфиденциальные фрагменты буфера — храни её безопасно.</div>
+              <div class="setting-actions" style="margin-top:11px">
+                <button class="secondary-button" data-action="export-backup">Экспортировать</button>
+                <button class="secondary-button" data-action="import-backup">Импортировать</button>
+              </div>
+            </div>
+            <div class="setting-card">
               <div class="setting-row">
                 <div class="setting-text"><div class="setting-title">История буфера обмена</div><div class="setting-description">Сохраняет скопированный текст и изображения локально, пока NOVA запущена.</div></div>
                 <button class="toggle" id="clipboardToggle" data-action="toggle-clipboard" role="switch" aria-label="История буфера"><span></span></button>
@@ -522,7 +601,7 @@
             </div>
             <div class="setting-card">
               <div class="setting-title">Быстрый доступ</div>
-              <div class="setting-description">Показать или скрыть остров: <b style="color:#d8d6e4;font-weight:600">Ctrl + Shift + Space</b>. Файлы можно открывать прямо из NOVA.</div>
+              <div class="setting-description">Показать/скрыть остров: <b style="color:#d8d6e4;font-weight:600">Ctrl + Shift + Space</b>. Быстрые клавиши: <b style="color:#d8d6e4;font-weight:600">Ctrl + N</b> — заметка, <b style="color:#d8d6e4;font-weight:600">Ctrl + K</b> — поиск, <b style="color:#d8d6e4;font-weight:600">Ctrl + Shift + N</b> — текст.</div>
               <div class="setting-actions" style="margin-top:11px">
                 <button class="secondary-button" data-action="quit">Выйти из NOVA</button>
               </div>
@@ -569,6 +648,12 @@
       const modalOverlay = $('#modalOverlay');
       const composerTitle = $('#composerTitle');
       const composerContent = $('#composerContent');
+      const collapsedButton = $('.collapsed-button');
+      const collapsedSubtitle = $('#collapsedSubtitle');
+      const collapsedControls = $('#collapsedControls');
+      const collapsedFocusToggle = $('#collapsedFocusToggle');
+      const focusCard = $('#focusCard');
+      const focusToggleButton = $('#focusToggleButton');
       const mediaDock = $('#mediaDock');
       const mediaAudio = $('#mediaAudio');
       const mediaVideo = $('#mediaVideo');
@@ -588,6 +673,7 @@
       let currentMediaElement = null;
       let state;
 
+      const defaultFocusTimer = { mode:'focus', durationMinutes:25, durationMs:25*60*1000, remainingMs:25*60*1000, endsAt:0, running:false };
       const demoDate = (minutesAgo) => new Date(Date.now() - minutesAgo * 60000).toISOString();
       const demoSeed = {
         items: [
@@ -603,15 +689,33 @@
       function loadPreviewState() {
         try {
           const saved = JSON.parse(localStorage.getItem(previewKey));
-          if (saved && Array.isArray(saved.items) && saved.settings) return { ...demoSeed, ...saved, expanded:true };
+          if (saved && Array.isArray(saved.items) && saved.settings) return { ...demoSeed, ...saved, focusTimer:{ ...defaultFocusTimer, ...(saved.focusTimer || {}) }, expanded:true };
         } catch (_) {}
         return JSON.parse(JSON.stringify(demoSeed));
       }
-      state = nativeAPI ? { items:[], settings:{clipboardEnabled:true,launchAtLogin:false,alwaysOnTop:true}, activeMedia:null, storage:{fileCount:0,totalBytes:0,orphanedFiles:0}, expanded:false } : loadPreviewState();
+      state = nativeAPI ? { items:[], settings:{clipboardEnabled:true,launchAtLogin:false,alwaysOnTop:true}, activeMedia:null, storage:{fileCount:0,totalBytes:0,orphanedFiles:0}, focusTimer:{ ...defaultFocusTimer }, expanded:false } : loadPreviewState();
+      const themeKey = 'nova-island-theme-v1';
+      let currentTheme = 'violet';
+      try {
+        const savedTheme = localStorage.getItem(themeKey);
+        if (['violet','cyan','sunset'].includes(savedTheme)) currentTheme = savedTheme;
+      } catch (_) {}
+
+      function setTheme(theme, save = true) {
+        currentTheme = ['violet','cyan','sunset'].includes(theme) ? theme : 'violet';
+        document.documentElement.dataset.theme = currentTheme;
+        $$('.theme-choice').forEach((button) => {
+          const selected = button.dataset.themeChoice === currentTheme;
+          button.classList.toggle('active', selected);
+          button.setAttribute('aria-checked', String(selected));
+        });
+        if (save) { try { localStorage.setItem(themeKey, currentTheme); } catch (_) {} }
+      }
+      setTheme(currentTheme, false);
 
       function savePreview() {
         if (!nativeAPI) {
-          try { localStorage.setItem(previewKey, JSON.stringify({ items:state.items, settings:state.settings })); } catch (_) {}
+          try { localStorage.setItem(previewKey, JSON.stringify({ items:state.items, settings:state.settings, focusTimer:state.focusTimer })); } catch (_) {}
         }
       }
 
@@ -639,6 +743,7 @@
           check:'<path d="m5 12 4 4L19 6"/>',
           folder:'<path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 9h18"/>',
           plus:'<path d="M12 5v14M5 12h14"/>',
+          timer:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9 2h6M12 5V2m6.2 3.8 1.3-1.3"/>',
           sparkle:'<path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z"/>'
         };
         return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${shapes[name] || shapes.sparkle}</svg>`;
@@ -784,12 +889,66 @@
         $('#mediaMuteButton').setAttribute('aria-label', element && (element.muted || element.volume === 0) ? 'Включить звук' : 'Выключить звук');
         if (element && document.activeElement !== mediaVolume) mediaVolume.value = String(element.volume);
       }
-      function renderMediaDock() {
+      function formatFocusTime(milliseconds) {
+        const totalSeconds = Math.max(0, Math.ceil((Number(milliseconds) || 0) / 1000));
+        return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
+      }
+      function renderFocusTimer() {
+        const timer = { ...defaultFocusTimer, ...(state.focusTimer || {}) };
+        const remaining = timer.running && Number(timer.endsAt) ? Math.max(0, timer.endsAt - Date.now()) : Math.max(0, Number(timer.remainingMs) || 0);
+        const duration = Math.max(1, Number(timer.durationMs) || 25 * 60 * 1000);
+        const mode = timer.mode === 'break' ? 'break' : 'focus';
+        const finished = remaining <= 0;
+        $('#focusClock').textContent = formatFocusTime(remaining);
+        $('#focusLabel').textContent = mode === 'break' ? 'ПЕРЕРЫВ' : 'ФОКУС';
+        $('#focusStatus').textContent = timer.running
+          ? (mode === 'break' ? 'Перерыв идёт' : 'Не отвлекайся')
+          : (finished ? 'Время вышло · можно повторить' : `${timer.durationMinutes} минут · ${timer.remainingMs < timer.durationMs ? 'на паузе' : 'готов к старту'}`);
+        focusCard.classList.toggle('is-running', Boolean(timer.running));
+        $('#focusProgress').style.width = `${Math.max(0, Math.min(100, (duration - remaining) / duration * 100))}%`;
+        focusToggleButton.innerHTML = icon(timer.running ? 'pause' : 'play', 12);
+        focusToggleButton.setAttribute('aria-label', timer.running ? 'Приостановить таймер' : (finished ? 'Запустить таймер заново' : 'Запустить таймер'));
+        focusToggleButton.title = timer.running ? 'Приостановить таймер' : 'Запустить таймер';
+        $$('.focus-preset').forEach((button) => {
+          const selected = Number(button.dataset.focusMinutes) === Number(timer.durationMinutes) && (button.dataset.focusMode === 'break' ? 'break' : 'focus') === mode;
+          button.classList.toggle('active', selected);
+          button.setAttribute('aria-pressed', String(selected));
+        });
+        collapsedFocusToggle.innerHTML = icon('pause', 12);
+        collapsedFocusToggle.hidden = !timer.running;
+        collapsedFocusToggle.setAttribute('aria-label', 'Приостановить таймер');
+        collapsedFocusToggle.title = `Пауза · ${formatFocusTime(remaining)}`;
+      }
+      function updateCollapsedPreview() {
         const active = state.activeMedia;
+        const pinnedItems = (state.items || []).filter((item) => item.pinned);
+        const previewItem = active || pinnedItems[0] || null;
+        const previewTitle = previewItem ? String(previewItem.title || 'Закреплённый элемент') : '';
+        const extraPins = previewItem ? pinnedItems.filter((item) => item.id !== previewItem.id).length : 0;
+        const extraLabel = extraPins ? `+${extraPins}` : '';
+        const timer = { ...defaultFocusTimer, ...(state.focusTimer || {}) };
+        const focusRunning = Boolean(timer.running);
+        island.classList.toggle('has-collapsed-preview', Boolean(previewItem));
         island.classList.toggle('has-active-media', Boolean(active));
         island.classList.toggle('has-video-media', Boolean(active && active.mediaType === 'video'));
-        $('#collapsedSubtitle').textContent = active ? `${active.title} · NOVA player` : 'всё важное рядом';
+        island.classList.toggle('has-focus-timer', focusRunning);
+        island.classList.toggle('has-collapsed-controls', Boolean(active) || focusRunning);
+        const previewMarker = previewItem && previewItem.pinned ? 'pin' : (previewItem && previewItem.mediaType === 'video' ? 'video' : 'audio');
+        const previewMarkup = previewItem
+          ? `<span class="collapsed-pin-mark">${icon(previewMarker, 10)}</span><span class="collapsed-preview-title">${escapeHtml(previewTitle)}</span>${extraLabel ? `<span class="collapsed-preview-more">${extraLabel}</span>` : ''}`
+          : '';
+        const timerMarkup = focusRunning
+          ? `<span class="collapsed-focus-tag">${icon('timer', 9)}${formatFocusTime(timer.endsAt ? Math.max(0, timer.endsAt - Date.now()) : timer.remainingMs)}</span>`
+          : '';
+        collapsedSubtitle.innerHTML = `${previewMarkup}${timerMarkup}` || 'всё важное рядом';
+        collapsedSubtitle.title = [previewItem ? `Закреплено: ${previewTitle}${extraLabel ? `; ещё ${extraLabel.slice(1)} элементов` : ''}` : '', focusRunning ? `Таймер: ${formatFocusTime(timer.endsAt ? Math.max(0, timer.endsAt - Date.now()) : timer.remainingMs)}` : ''].filter(Boolean).join(' · ');
+        collapsedButton.title = previewItem ? `Открыть NOVA · ${previewTitle}` : (focusRunning ? `Таймер фокуса · ${formatFocusTime(timer.endsAt - Date.now())}` : 'Нажми, чтобы открыть NOVA');
+        collapsedButton.setAttribute('aria-label', previewItem ? `Открыть NOVA. Закреплено: ${previewTitle}` : (focusRunning ? 'Открыть NOVA. Таймер фокуса запущен' : 'Открыть NOVA'));
         collapsedMediaToggle.hidden = !active;
+      }
+      function renderMediaDock() {
+        const active = state.activeMedia;
+        updateCollapsedPreview();
         if (!active || !active.mediaUrl) {
           if (currentMediaElement) currentMediaElement.pause();
           mediaAudio.pause(); mediaVideo.pause();
@@ -854,6 +1013,7 @@
           button.setAttribute('aria-selected', String(active));
         });
         renderItems();
+        renderFocusTimer();
         renderMediaDock();
       }
 
@@ -1013,6 +1173,51 @@
         currentMediaElement.muted = !currentMediaElement.muted;
         syncMediaControls();
       }
+      async function controlFocusTimer(action, minutes, mode = 'focus') {
+        if (nativeAPI) {
+          state = await nativeAPI.focusTimer(action, minutes, mode);
+        } else {
+          const timer = { ...defaultFocusTimer, ...(state.focusTimer || {}) };
+          if (action === 'preset') {
+            timer.durationMinutes = Math.min(180, Math.max(1, Number(minutes) || 25));
+            timer.durationMs = timer.durationMinutes * 60000;
+            timer.remainingMs = timer.durationMs;
+            timer.mode = mode === 'break' ? 'break' : 'focus';
+            timer.endsAt = 0;
+            timer.running = false;
+          } else if (action === 'reset') {
+            timer.remainingMs = timer.durationMs;
+            timer.endsAt = 0;
+            timer.running = false;
+          } else if (timer.running) {
+            timer.remainingMs = Math.max(0, timer.endsAt - Date.now());
+            timer.endsAt = 0;
+            timer.running = false;
+          } else {
+            if (timer.remainingMs <= 0) timer.remainingMs = timer.durationMs;
+            timer.endsAt = Date.now() + timer.remainingMs;
+            timer.running = true;
+          }
+          state.focusTimer = timer;
+          savePreview();
+        }
+        render();
+        if (action === 'preset') showToast(mode === 'break' ? 'Перерыв · 5 минут' : `Фокус · ${minutes} минут`);
+        else if (action === 'reset') showToast('Таймер сброшен');
+        else showToast(state.focusTimer && state.focusTimer.running ? 'Таймер запущен' : 'Таймер на паузе');
+      }
+      async function runBackup(action) {
+        if (!nativeAPI) { showToast('Резервная копия доступна в приложении'); return; }
+        try {
+          const result = action === 'export' ? await nativeAPI.exportBackup() : await nativeAPI.importBackup();
+          if (action === 'import' && result && result.ok) {
+            const nextState = await nativeAPI.getState();
+            if (nextState) state = nextState;
+            render();
+          }
+          showToast(result && result.message ? result.message : 'Операция не выполнена');
+        } catch (_) { showToast('Не удалось выполнить операцию с резервной копией'); }
+      }
       async function toggleAlwaysOnTop() {
         const enabled = !(state.settings && state.settings.alwaysOnTop !== false);
         if (nativeAPI) state = await nativeAPI.setAlwaysOnTop(enabled);
@@ -1048,14 +1253,19 @@
         }
       }
       async function togglePin(id) {
-        if (nativeAPI) state = await nativeAPI.togglePin(id);
-        else {
+        let pinned = false;
+        if (nativeAPI) {
+          state = await nativeAPI.togglePin(id);
+          pinned = Boolean(state.items.find((item) => item.id === id)?.pinned);
+        } else {
           const item = state.items.find((candidate) => candidate.id === id);
-          if (item) item.pinned = !item.pinned;
+          if (item) { item.pinned = !item.pinned; pinned = item.pinned; }
+          if (pinned) state.expanded = true;
           savePreview();
         }
+        if (pinned && !state.expanded) await setExpanded(true);
         render();
-        showToast('Закрепление обновлено');
+        showToast(pinned ? 'Закреплено · остров открыт' : 'Элемент откреплён');
       }
       async function deleteItem(id) {
         if (nativeAPI) state = await nativeAPI.deleteItem(id);
@@ -1106,6 +1316,11 @@
             case 'add-file': addFile(); break;
             case 'save-composer': await saveComposer(); break;
             case 'close-modal': closeComposer(); break;
+            case 'focus-toggle': await controlFocusTimer('toggle'); break;
+            case 'focus-reset': await controlFocusTimer('reset'); break;
+            case 'focus-preset': await controlFocusTimer('preset', Number(actionButton.dataset.focusMinutes), actionButton.dataset.focusMode || 'focus'); break;
+            case 'export-backup': await runBackup('export'); break;
+            case 'import-backup': await runBackup('import'); break;
             case 'copy': await copyItem(id); break;
             case 'open': await openItem(id); break;
             case 'reveal':
@@ -1133,6 +1348,12 @@
               break;
             default: break;
           }
+          return;
+        }
+        const themeButton = event.target.closest('[data-theme-choice]');
+        if (themeButton) {
+          setTheme(themeButton.dataset.themeChoice);
+          showToast(`Тема: ${themeButton.querySelector('span').textContent}`);
           return;
         }
         const filterButton = event.target.closest('[data-filter]');
@@ -1188,6 +1409,29 @@
       });
 
       document.addEventListener('keydown', async (event) => {
+        const modifier = event.ctrlKey || event.metaKey;
+        const editing = ['INPUT','TEXTAREA'].includes(document.activeElement && document.activeElement.tagName);
+        if (modifier && !event.altKey && !modalOverlay.classList.contains('visible')) {
+          const key = event.key.toLowerCase();
+          if (key === 'n') {
+            event.preventDefault();
+            if (!state.expanded) await setExpanded(true);
+            openComposer(event.shiftKey ? 'text' : 'note');
+            return;
+          }
+          if (key === 'k') {
+            event.preventDefault();
+            if (!state.expanded) await setExpanded(true);
+            searchInput.focus();
+            return;
+          }
+          if (!editing && /^[1-6]$/.test(key)) {
+            const filters = ['all','files','clipboard','notes','pinned','media'];
+            activeFilter = filters[Number(key) - 1];
+            render();
+            return;
+          }
+        }
         if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && modalOverlay.classList.contains('visible')) {
           event.preventDefault(); await saveComposer(); return;
         }
@@ -1205,6 +1449,27 @@
         nativeAPI.getState().then((nextState) => { if (nextState) { state = nextState; render(); } }).catch(() => {});
         nativeAPI.onState((nextState) => { if (nextState) { state = nextState; render(); } });
         nativeAPI.onExpanded((value) => { state.expanded = Boolean(value); render(); });
+        nativeAPI.onFocusTick((timer) => { state.focusTimer = timer; renderFocusTimer(); updateCollapsedPreview(); });
+        setInterval(() => {
+          if (state.focusTimer && state.focusTimer.running) {
+            renderFocusTimer();
+            updateCollapsedPreview();
+          }
+        }, 1000);
+      } else {
+        setInterval(() => {
+          const timer = state.focusTimer;
+          if (!timer || !timer.running) return;
+          timer.remainingMs = Math.max(0, timer.endsAt - Date.now());
+          if (timer.remainingMs <= 0) {
+            timer.running = false;
+            timer.endsAt = 0;
+            showToast(timer.mode === 'break' ? 'Перерыв завершён' : 'Фокус завершён · отличная работа');
+            savePreview();
+          }
+          renderFocusTimer();
+          updateCollapsedPreview();
+        }, 1000);
       }
       render();
     })();
