@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob: file:; img-src 'self' data: blob: file:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'none'; base-uri 'none'; object-src 'none';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob: file:; img-src 'self' data: blob: file:; media-src 'self' file: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'none'; base-uri 'none'; object-src 'none';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0c0d12">
   <title>NOVA Island</title>
@@ -54,7 +54,7 @@
         linear-gradient(180deg, #111216, #030405 74%);
       box-shadow: 0 14px 42px rgba(0,0,0,.66), 0 3px 12px rgba(0,0,0,.46), inset 0 1px rgba(255,255,255,.055);
       -webkit-app-region: no-drag;
-      transition: width .42s cubic-bezier(.2,.85,.25,1), height .44s cubic-bezier(.2,.85,.25,1), border-radius .33s ease, box-shadow .35s ease, border-color .3s ease;
+      transition: width .56s cubic-bezier(.22,1,.36,1), height .58s cubic-bezier(.22,1,.36,1), border-radius .48s cubic-bezier(.22,1,.36,1), box-shadow .42s ease, border-color .38s ease;
       will-change: width, height, border-radius;
     }
     .island::before {
@@ -86,6 +86,10 @@
       border: 0; background: transparent; width: 100%; height: 100%; padding: 0 12px;
       display: flex; align-items: center; gap: 7px; cursor: pointer; text-align: left;
     }
+    .collapsed-media-toggle { position:absolute; z-index:3; right:7px; top:50%; transform:translateY(-50%); width:28px; height:28px; display:grid; place-items:center; padding:0; border:1px solid rgba(140,233,202,.22); border-radius:50%; color:#a2f0d4; background:rgba(95,196,162,.13); cursor:pointer; box-shadow:0 0 16px rgba(105,218,181,.1); }
+    .collapsed-media-toggle:hover { background:rgba(95,196,162,.24); color:#fff; }
+    .collapsed-media-toggle[hidden] { display:none !important; }
+    .island.has-active-media:not(.expanded) .collapsed-button { padding-right:43px; }
     .brand-mark {
       width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center;
       border-radius: 12px; position: relative; overflow: hidden;
@@ -99,7 +103,9 @@
     .collapsed-button .brand-mark svg { width:17px; height:17px; }
     .collapsed-copy { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
     .collapsed-title { font-size:10px; font-weight:760; letter-spacing:.19em; line-height:1; }
-    .collapsed-subtitle { display:none; color:#a3a5b1; font-size:10px; letter-spacing:.015em; white-space:nowrap; }
+    .collapsed-subtitle { display:none; color:#a3a5b1; font-size:8px; letter-spacing:.015em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:112px; }
+    .island.has-active-media:not(.expanded) .collapsed-subtitle { display:block; color:#aaa6ca; }
+    .island.has-active-media:not(.expanded) .count-badge { display:none; }
     .live-dot { width:6px; height:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 0 3px rgba(140,233,202,.1), 0 0 11px rgba(140,233,202,.65); flex:0 0 auto; animation:live-pulse 2.2s ease-in-out infinite; }
     @keyframes live-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.62; transform:scale(.82); } }
     .count-badge {
@@ -113,13 +119,13 @@
       padding: 17px 18px 13px;
       display: flex; flex-direction: column; gap: 0;
       opacity: 0; visibility: hidden; pointer-events: none;
-      transform: translateY(8px) scale(.995);
-      transition: opacity .2s ease .03s, transform .29s cubic-bezier(.2,.8,.2,1), visibility .2s;
+      transform: translateY(5px);
+      transition: opacity .24s ease .02s, transform .36s cubic-bezier(.22,1,.36,1), visibility .24s;
       min-width: 0; min-height: 0;
     }
     .island.expanded .expanded-view {
-      opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1);
-      transition-delay: .06s;
+      opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0);
+      transition-delay: .04s;
     }
     .topbar { display:flex; flex:0 0 31px; align-items:center; justify-content:space-between; position:relative; z-index:2; }
     .top-brand { display:flex; align-items:center; gap:9px; min-width:0; }
@@ -209,6 +215,8 @@
     .item-icon.kind-text { color:#8ce9ca; border-color:rgba(140,233,202,.11); background:rgba(94,190,157,.085); }
     .item-icon.kind-note { color:#ffbd8a; border-color:rgba(255,189,138,.13); background:rgba(235,158,103,.08); }
     .item-icon.kind-image { color:#b9a9ff; border-color:rgba(181,168,255,.17); background:linear-gradient(145deg,rgba(150,125,255,.18),rgba(83,170,154,.12)); }
+    .item-icon.kind-media-audio { color:#89e7c8; border-color:rgba(140,233,202,.17); background:linear-gradient(145deg,rgba(89,199,164,.14),rgba(85,130,204,.12)); }
+    .item-icon.kind-media-video { color:#ffb28f; border-color:rgba(255,178,143,.17); background:linear-gradient(145deg,rgba(237,137,111,.15),rgba(150,125,255,.13)); }
     .item-icon img { width:100%; height:100%; object-fit:cover; }
     .file-ext { display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size:8px; font-weight:740; letter-spacing:.04em; color:inherit; }
     .item-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
@@ -218,12 +226,54 @@
     .item-preview { color:#858997; font-size:9px; line-height:1.3; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
     .item-meta { display:flex; align-items:center; gap:6px; color:#666b79; font-size:8px; line-height:1; }
     .item-meta .meta-dot { width:2px; height:2px; border-radius:50%; background:#555968; }
-    .item-actions { display:flex; align-items:center; gap:2px; flex:0 0 auto; opacity:0; transform:translateX(3px); transition:opacity .17s ease,transform .17s ease; }
-    .item:hover .item-actions, .item:focus-within .item-actions { opacity:1; transform:translateX(0); }
+    .item-actions { display:flex; align-items:center; gap:2px; flex:0 0 auto; opacity:.78; transform:translateX(0); transition:opacity .2s ease,transform .2s ease; }
+    .item:hover .item-actions, .item:focus-within .item-actions { opacity:1; }
     .item-action { width:25px; height:25px; padding:0; display:grid; place-items:center; color:#858999; background:transparent; border:0; border-radius:8px; cursor:pointer; transition:color .15s ease,background .15s ease; }
     .item-action:hover { color:#fff; background:rgba(255,255,255,.09); }
-    .item-action.is-pinned { color:#c3b7ff; opacity:1; }
+    .item-action.is-pinned { color:#c3b7ff; opacity:1; background:rgba(181,168,255,.1); }
+    .item-action[data-action=play-media] { color:#8ce9ca; }
+    .group-heading { display:flex; align-items:center; gap:8px; padding:2px 3px 0; color:#737889; font-size:8px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+    .group-heading::after { content:''; height:1px; flex:1; background:linear-gradient(90deg,rgba(255,255,255,.1),transparent); }
     .item-action.danger:hover { color:#ff9e9e; background:rgba(255,98,115,.1); }
+    .media-dock { flex:0 0 auto; display:flex; flex-direction:column; margin-top:11px; overflow:hidden; border:1px solid rgba(181,168,255,.16); border-radius:16px; background:linear-gradient(145deg,rgba(37,34,54,.86),rgba(17,18,25,.96) 58%); box-shadow:inset 0 1px rgba(255,255,255,.045),0 10px 24px rgba(0,0,0,.16); animation:media-in .38s cubic-bezier(.22,1,.36,1) both; }
+    .media-dock[hidden], .media-video-stage[hidden] { display:none !important; }
+    @keyframes media-in { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+    .media-video-stage { height:120px; display:grid; place-items:center; overflow:hidden; background:#05060a; border-bottom:1px solid rgba(255,255,255,.07); }
+    .media-video-stage video { width:100%; height:100%; object-fit:contain; background:#030407; }
+    .media-player-body { min-height:77px; display:flex; align-items:center; gap:10px; padding:9px 10px; }
+    .media-dock.is-video .media-player-body { min-height:72px; }
+    .media-art { width:42px; height:42px; flex:0 0 42px; display:flex; align-items:center; justify-content:center; gap:3px; border:1px solid rgba(140,233,202,.16); border-radius:13px; color:#9cebd0; background:linear-gradient(145deg,rgba(92,214,177,.13),rgba(126,111,218,.12)); }
+    .media-dock.is-video .media-art { display:none; }
+    .wave-bar { width:3px; height:10px; border-radius:4px; background:currentColor; opacity:.72; transform-origin:center; }
+    .wave-bar:nth-child(2), .wave-bar:nth-child(5) { height:17px; }
+    .wave-bar:nth-child(3) { height:24px; }
+    .wave-bar:nth-child(4) { height:14px; }
+    .media-dock.is-playing .wave-bar { animation:wave .74s ease-in-out infinite alternate; }
+    .media-dock.is-playing .wave-bar:nth-child(2) { animation-delay:-.31s; }
+    .media-dock.is-playing .wave-bar:nth-child(3) { animation-delay:-.55s; }
+    .media-dock.is-playing .wave-bar:nth-child(4) { animation-delay:-.18s; }
+    @keyframes wave { to { transform:scaleY(.38); opacity:.48; } }
+    .media-player-main { min-width:0; flex:1; }
+    .media-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
+    .media-title-copy { min-width:0; flex:1; }
+    .media-title { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:#f0eff9; font-size:10px; font-weight:650; }
+    .media-subtitle { margin-top:3px; color:#858999; font-size:8px; letter-spacing:.035em; }
+    .media-player-actions { display:flex; align-items:center; gap:3px; flex:0 0 auto; }
+    .media-icon-button { width:24px; height:24px; display:grid; place-items:center; padding:0; border:1px solid transparent; border-radius:8px; color:#9296a6; background:transparent; cursor:pointer; transition:color .18s ease,background .18s ease,border-color .18s ease,transform .18s ease; }
+    .media-icon-button:hover { color:#fff; background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.08); transform:translateY(-1px); }
+    .media-icon-button.is-pinned { color:#c5baff; background:rgba(181,168,255,.12); }
+    .media-controls { display:flex; align-items:center; gap:4px; margin-top:6px; min-width:0; }
+    .media-transport-button { width:21px; height:21px; display:grid; place-items:center; padding:0; border:0; border-radius:7px; color:#9b9eaa; background:transparent; cursor:pointer; flex:0 0 auto; }
+    .media-transport-button:hover { color:#fff; background:rgba(255,255,255,.08); }
+    .media-play-button { width:27px; height:27px; border:1px solid rgba(181,168,255,.2); border-radius:9px; color:#ded8ff; background:rgba(155,135,255,.15); }
+    .media-play-button:hover { color:#fff; background:rgba(155,135,255,.25); }
+    .media-range { min-width:28px; flex:1; height:12px; margin:0 2px; accent-color:#b5a8ff; cursor:pointer; }
+    .media-time { min-width:54px; color:#858999; font-size:8px; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .media-volume { width:42px; height:12px; accent-color:#8ce9ca; cursor:pointer; }
+    .media-audio-element { display:none; }
+    .storage-summary { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:9px; color:#9da0ad; font-size:9px; font-variant-numeric:tabular-nums; }
+    .storage-track { height:4px; margin-top:8px; overflow:hidden; border-radius:99px; background:rgba(255,255,255,.07); }
+    .storage-track > span { display:block; height:100%; width:0; border-radius:inherit; background:linear-gradient(90deg,#a99aff,#8ce9ca); transition:width .35s ease; }
     .empty-state { flex:1; min-height:140px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:7px; text-align:center; border:1px dashed rgba(255,255,255,.09); border-radius:16px; color:#858a98; padding:20px; }
     .empty-state strong { font-size:11px; color:#d1d1dd; font-weight:600; }
     .empty-state span { max-width:220px; font-size:9px; line-height:1.45; }
@@ -300,6 +350,12 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { transition-duration:.01ms !important; animation-duration:.01ms !important; scroll-behavior:auto !important; }
     }
+    .island.has-video-media .home-view { padding-top:8px; }
+    .island.has-video-media .quick-actions { margin-top:10px; }
+    .island.has-video-media .drop-strip { margin-top:7px; }
+    .island.has-video-media .search-wrap { margin-top:9px; }
+    .island.has-video-media .filter-row { margin-top:7px; }
+    .island.has-video-media .list-heading { margin-top:6px; margin-bottom:5px; }
   </style>
 </head>
 <body>
@@ -314,13 +370,14 @@
               <circle cx="18.2" cy="6.3" r="1.8" fill="#8ce9ca"/>
             </svg>
           </span>
-          <span class="collapsed-copy">
+            <span class="collapsed-copy">
             <span class="collapsed-title">NOVA</span>
-            <span class="collapsed-subtitle">всё важное рядом</span>
+            <span id="collapsedSubtitle" class="collapsed-subtitle">всё важное рядом</span>
           </span>
           <span class="live-dot" aria-hidden="true"></span>
           <span class="count-badge" id="collapsedCount">00</span>
         </button>
+        <button id="collapsedMediaToggle" class="collapsed-media-toggle" data-action="media-toggle" aria-label="Воспроизвести" title="Воспроизвести" hidden><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.7c0-.8.9-1.3 1.6-.9l9.1 6.1a1.3 1.3 0 0 1 0 2.2l-9.1 6.1c-.7.5-1.6-.1-1.6-.9V5.7Z"/></svg></button>
       </div>
 
       <div class="expanded-view">
@@ -347,6 +404,34 @@
             </button>
           </div>
         </header>
+
+        <section id="mediaDock" class="media-dock" aria-label="Медиаплеер" hidden>
+          <div id="mediaVideoStage" class="media-video-stage" hidden>
+            <video id="mediaVideo" preload="metadata" playsinline></video>
+          </div>
+          <div class="media-player-body">
+            <div id="mediaAudioArt" class="media-art" aria-hidden="true"><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i></div>
+            <div class="media-player-main">
+              <div class="media-title-row">
+                <div class="media-title-copy"><div id="mediaTitle" class="media-title">Медиаплеер</div><div id="mediaSubtitle" class="media-subtitle">Остановлен</div></div>
+                <div class="media-player-actions">
+                  <button id="mediaPinButton" class="media-icon-button" data-action="media-pin" aria-label="Закрепить медиафайл" title="Закрепить медиафайл"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 5 5-4 1-4 4-1 5-2-2-2 2 1-5 4-4 1-4Z"/><path d="m9 15-5 6"/></svg></button>
+                  <button class="media-icon-button" data-action="media-close" aria-label="Закрыть плеер" title="Закрыть плеер"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+                </div>
+              </div>
+              <div class="media-controls">
+                <button class="media-transport-button" data-action="media-back" aria-label="Назад на 10 секунд" title="−10 сек"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5M12 8v8m0-8-2 2m5-2v8"/></svg></button>
+                <button id="mediaToggleButton" class="media-transport-button media-play-button" data-action="media-toggle" aria-label="Воспроизвести" title="Воспроизвести"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.7c0-.8.9-1.3 1.6-.9l9.1 6.1a1.3 1.3 0 0 1 0 2.2l-9.1 6.1c-.7.5-1.6-.1-1.6-.9V5.7Z"/></svg></button>
+                <button class="media-transport-button" data-action="media-forward" aria-label="Вперёд на 10 секунд" title="+10 сек"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5M12 8v8m0-8-2 2m5-2v8"/></svg></button>
+                <input id="mediaSeek" class="media-range" type="range" min="0" max="1000" value="0" aria-label="Позиция воспроизведения">
+                <span class="media-time"><span id="mediaCurrent">0:00</span>/<span id="mediaDuration">--:--</span></span>
+                <button id="mediaMuteButton" class="media-transport-button" data-action="media-mute" aria-label="Без звука" title="Без звука"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M16 9a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12"/></svg></button>
+                <input id="mediaVolume" class="media-volume" type="range" min="0" max="1" step=".05" value=".8" aria-label="Громкость">
+              </div>
+            </div>
+          </div>
+          <audio id="mediaAudio" class="media-audio-element" preload="metadata"></audio>
+        </section>
 
         <section id="homeView" class="home-view">
           <div class="hero">
@@ -384,6 +469,8 @@
             <button class="filter-chip" data-filter="files" role="tab">Файлы</button>
             <button class="filter-chip" data-filter="clipboard" role="tab">Буфер</button>
             <button class="filter-chip" data-filter="notes" role="tab">Заметки</button>
+            <button class="filter-chip" data-filter="pinned" role="tab">Закреплённое</button>
+            <button class="filter-chip" data-filter="media" role="tab">Медиа</button>
           </div>
 
           <div class="list-heading"><span id="listHeading">ПОСЛЕДНЕЕ</span><span class="live-status"><i class="live-dot"></i><span id="clipboardStatus">Буфер активен</span></span></div>
@@ -399,14 +486,31 @@
             <div class="setting-card">
               <div class="setting-row">
                 <div class="setting-text"><div class="setting-title">История буфера обмена</div><div class="setting-description">Сохраняет скопированный текст и изображения локально, пока NOVA запущена.</div></div>
-                <button class="toggle" id="clipboardToggle" data-action="toggle-clipboard" role="switch" aria-label="История буфера"></button>
+                <button class="toggle" id="clipboardToggle" data-action="toggle-clipboard" role="switch" aria-label="История буфера"><span></span></button>
+              </div>
+            </div>
+            <div class="setting-card">
+              <div class="setting-row">
+                <div class="setting-text"><div class="setting-title">Поверх всех окон</div><div class="setting-description">Оставлять остров поверх других окон. Если выключить, NOVA будет вести себя как обычное окно.</div></div>
+                <button class="toggle" id="alwaysOnTopToggle" data-action="toggle-topmost" role="switch" aria-label="Поверх всех окон"><span></span></button>
               </div>
             </div>
             <div class="setting-card">
               <div class="setting-row">
                 <div class="setting-text"><div class="setting-title">Запускать вместе с Windows</div><div class="setting-description">NOVA свернётся в область уведомлений и будет ждать горячую клавишу.</div></div>
-                <button class="toggle" id="startupToggle" data-action="toggle-startup" role="switch" aria-label="Запуск вместе с Windows"></button>
+                <button class="toggle" id="startupToggle" data-action="toggle-startup" role="switch" aria-label="Запуск вместе с Windows"><span></span></button>
               </div>
+            </div>
+            <div class="setting-card">
+              <div class="setting-title">Локальное хранилище</div>
+              <div class="setting-description">NOVA хранит собственные копии файлов в своей папке; исходники не меняются. Шкала показывает объём относительно 1 ГБ и не является лимитом.</div>
+              <div class="storage-summary"><span id="storageCount">0 файлов</span><span id="storageSize">0 Б</span></div>
+              <div class="storage-track" aria-hidden="true"><span id="storageFill"></span></div>
+              <div class="setting-actions" style="margin-top:11px">
+                <button class="secondary-button" data-action="open-storage">Открыть папку</button>
+                <button class="secondary-button" data-action="clean-storage">Убрать потерянные копии</button>
+              </div>
+              <div id="storageOrphans" class="setting-description"></div>
             </div>
             <div class="setting-card">
               <div class="setting-title">Данные и приватность</div>
@@ -465,6 +569,14 @@
       const modalOverlay = $('#modalOverlay');
       const composerTitle = $('#composerTitle');
       const composerContent = $('#composerContent');
+      const mediaDock = $('#mediaDock');
+      const mediaAudio = $('#mediaAudio');
+      const mediaVideo = $('#mediaVideo');
+      const mediaVideoStage = $('#mediaVideoStage');
+      const mediaSeek = $('#mediaSeek');
+      const mediaVolume = $('#mediaVolume');
+      const mediaToggleButton = $('#mediaToggleButton');
+      const collapsedMediaToggle = $('#collapsedMediaToggle');
       const nativeAPI = window.novaAPI || null;
       const previewKey = 'nova-island-preview-v1';
       let activeFilter = 'all';
@@ -472,6 +584,8 @@
       let composerKind = 'note';
       let dragDepth = 0;
       let toastTimer = null;
+      let currentMediaId = '';
+      let currentMediaElement = null;
       let state;
 
       const demoDate = (minutesAgo) => new Date(Date.now() - minutesAgo * 60000).toISOString();
@@ -482,7 +596,7 @@
           { id:'demo-3', kind:'note', title:'Идея на потом', content:'Добавить быстрый таймер и маленькие напоминания прямо в остров.', extension:'', size:68, createdAt:demoDate(68), source:'manual', pinned:false },
           { id:'demo-4', kind:'image', title:'Мудборд — 04.png', content:'', extension:'PNG', size:894120, createdAt:demoDate(155), source:'drop', pinned:false }
         ],
-        settings: { clipboardEnabled:true, launchAtLogin:false },
+        settings: { clipboardEnabled:true, launchAtLogin:false, alwaysOnTop:true },
         expanded:true
       };
 
@@ -493,7 +607,7 @@
         } catch (_) {}
         return JSON.parse(JSON.stringify(demoSeed));
       }
-      state = nativeAPI ? { items:[], settings:{clipboardEnabled:true,launchAtLogin:false}, expanded:false } : loadPreviewState();
+      state = nativeAPI ? { items:[], settings:{clipboardEnabled:true,launchAtLogin:false,alwaysOnTop:true}, activeMedia:null, storage:{fileCount:0,totalBytes:0,orphanedFiles:0}, expanded:false } : loadPreviewState();
 
       function savePreview() {
         if (!nativeAPI) {
@@ -510,6 +624,13 @@
           text:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h7M7 17h4"/>',
           note:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
           image:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
+          audio:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M9 9l12-2"/>',
+          video:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3V9Z"/>',
+          play:'<path d="M8 5.7c0-.8.9-1.3 1.6-.9l9.1 6.1a1.3 1.3 0 0 1 0 2.2l-9.1 6.1c-.7.5-1.6-.1-1.6-.9V5.7Z"/>',
+          pause:'<path d="M8 5v14M16 5v14"/>',
+          volume:'<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M16 9a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12"/>',
+          'volume-off':'<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 9 5 6m0-6-5 6"/>',
+          storage:'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
           copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
           pin:'<path d="m16 3 5 5-4 1-4 4-1 5-2-2-2 2 1-5 4-4 1-4Z"/><path d="m9 15-5 6"/>',
           trash:'<path d="M4 7h16M10 11v6M14 11v6M5 7l1 14h12l1-14M9 7V4h6v3"/>',
@@ -526,7 +647,8 @@
         const value = Number(bytes) || 0;
         if (value < 1024) return `${value} Б`;
         if (value < 1024 * 1024) return `${(value / 1024).toFixed(value > 10240 ? 0 : 1)} КБ`;
-        return `${(value / (1024 * 1024)).toFixed(value > 10 * 1024 * 1024 ? 0 : 1)} МБ`;
+        if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(value > 10 * 1024 * 1024 ? 0 : 1)} МБ`;
+        return `${(value / (1024 * 1024 * 1024)).toFixed(value > 10 * 1024 * 1024 * 1024 ? 0 : 1)} ГБ`;
       }
       function formatTime(dateValue) {
         const date = new Date(dateValue || Date.now());
@@ -542,52 +664,62 @@
       function kindLabel(item) {
         if (item.kind === 'file') return item.extension || 'ФАЙЛ';
         if (item.kind === 'image') return 'ИЗОБРАЖЕНИЕ';
+        if (item.kind === 'media') return `${item.mediaType === 'video' ? 'ВИДЕО' : 'АУДИО'} · ${item.extension || 'МЕДИА'}`;
         if (item.source === 'clipboard') return 'БУФЕР ОБМЕНА';
         if (item.kind === 'note') return 'ЗАМЕТКА';
         return 'ТЕКСТ';
       }
+
       function itemPreview(item) {
         if (item.kind === 'file') return `${formatBytes(item.size)} · ${item.extension || 'файл'}`;
         if (item.kind === 'image') return `${formatBytes(item.size)} · изображение`;
+        if (item.kind === 'media') return `${item.mediaType === 'video' ? 'видео' : 'аудио'} · ${item.extension || 'медиа'} · ${formatBytes(item.size)}`;
         return (item.content || '').replace(/\s+/g, ' ').trim().slice(0, 88) || 'Нет текста';
       }
       function itemIcon(item) {
         if (item.kind === 'file') return `<span class="file-ext">${escapeHtml(item.extension || 'FILE')}</span>`;
         if (item.kind === 'image' && item.thumbnail) return `<img src="${escapeHtml(item.thumbnail)}" alt="">`;
         if (item.kind === 'image') return icon('image', 17);
+        if (item.kind === 'media') return icon(item.mediaType === 'video' ? 'video' : 'audio', 17);
         if (item.kind === 'note') return icon('note', 17);
         return icon('text', 17);
       }
       function matchesFilter(item) {
         if (activeFilter === 'files') return item.kind === 'file' || item.kind === 'image';
+        if (activeFilter === 'media') return item.kind === 'media';
+        if (activeFilter === 'pinned') return Boolean(item.pinned);
         if (activeFilter === 'clipboard') return item.source === 'clipboard';
         if (activeFilter === 'notes') return item.kind === 'note';
         return true;
       }
+
       function itemMarkup(item, index) {
-        const kind = ['file','image','note','text'].includes(item.kind) ? item.kind : 'text';
+        const kind = ['file','image','note','text','media'].includes(item.kind) ? item.kind : 'text';
         const name = escapeHtml(item.title || 'Без названия');
+        const id = escapeHtml(item.id);
         const pinned = item.pinned ? `<span class="pin-mark">${icon('pin', 11)}</span>` : '';
-        const copiedFrom = item.source === 'clipboard' ? 'буфер обмена' : (item.kind === 'note' ? 'личная заметка' : 'в NOVA');
-        const isFile = kind === 'file' || kind === 'image';
-        const primaryAction = isFile ? 'open' : 'copy';
-        const primaryLabel = isFile ? 'Открыть' : 'Скопировать';
-        const fileActions = isFile ? `<button class="item-action" data-action="copy" data-id="${escapeHtml(item.id)}" aria-label="Скопировать" title="Скопировать файл или изображение">${icon('copy', 13)}</button><button class="item-action" data-action="reveal" data-id="${escapeHtml(item.id)}" aria-label="Показать в Проводнике" title="Показать в Проводнике">${icon('folder', 13)}</button>` : '';
-        return `<article class="item" data-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${name}" style="animation-delay:${Math.min(index, 5) * 28}ms">
-          <span class="item-icon kind-${kind}">${itemIcon(item)}</span>
+        const copiedFrom = item.source === 'clipboard' ? 'буфер обмена' : (kind === 'note' ? 'личная заметка' : (kind === 'media' ? 'медиатека NOVA' : 'в NOVA'));
+        const isMedia = kind === 'media';
+        const isStoredFile = kind === 'file' || kind === 'image' || isMedia;
+        const primaryAction = isMedia ? 'play-media' : (isStoredFile ? 'open' : 'copy');
+        const primaryLabel = isMedia ? 'Воспроизвести' : (isStoredFile ? 'Открыть' : 'Скопировать');
+        const fileActions = isStoredFile ? `<button class="item-action" data-action="copy" data-id="${id}" aria-label="Скопировать" title="Скопировать файл">${icon('copy', 13)}</button><button class="item-action" data-action="reveal" data-id="${id}" aria-label="Показать в Проводнике" title="Показать в Проводнике">${icon('folder', 13)}</button>` : '';
+        return `<article class="item" data-id="${id}" tabindex="0" role="button" aria-label="${name}" style="animation-delay:${Math.min(index, 5) * 28}ms">
+          <span class="item-icon kind-${kind}${isMedia ? `-${item.mediaType === 'video' ? 'video' : 'audio'}` : ''}">${itemIcon(item)}</span>
           <span class="item-main">
             <span class="item-title-row"><span class="item-title">${name}</span>${pinned}</span>
             <span class="item-preview">${escapeHtml(itemPreview(item))}</span>
             <span class="item-meta"><span>${escapeHtml(copiedFrom)}</span><i class="meta-dot"></i><span>${escapeHtml(formatTime(item.createdAt))}</span></span>
           </span>
           <span class="item-actions">
-            <button class="item-action" data-action="${primaryAction}" data-id="${escapeHtml(item.id)}" aria-label="${primaryLabel}" title="${primaryLabel}">${icon(primaryAction === 'open' ? 'open' : 'copy', 13)}</button>
+            <button class="item-action" data-action="${primaryAction}" data-id="${id}" aria-label="${primaryLabel}" title="${primaryLabel}">${icon(isMedia ? 'play' : (primaryAction === 'open' ? 'open' : 'copy'), 13)}</button>
             ${fileActions}
-            <button class="item-action ${item.pinned ? 'is-pinned' : ''}" data-action="pin" data-id="${escapeHtml(item.id)}" aria-label="${item.pinned ? 'Открепить' : 'Закрепить'}" title="${item.pinned ? 'Открепить' : 'Закрепить'}">${icon('pin', 13)}</button>
-            <button class="item-action danger" data-action="delete" data-id="${escapeHtml(item.id)}" aria-label="Удалить" title="Удалить">${icon('trash', 13)}</button>
+            <button class="item-action ${item.pinned ? 'is-pinned' : ''}" data-action="pin" data-id="${id}" aria-label="${item.pinned ? 'Открепить' : 'Закрепить'}" title="${item.pinned ? 'Открепить' : 'Закрепить'}">${icon('pin', 13)}</button>
+            <button class="item-action danger" data-action="delete" data-id="${id}" aria-label="Удалить" title="Удалить">${icon('trash', 13)}</button>
           </span>
         </article>`;
       }
+
       function renderItems() {
         const query = (searchInput.value || '').trim().toLocaleLowerCase('ru-RU');
         const filtered = (state.items || []).filter((item) => {
@@ -595,13 +727,101 @@
           if (!query) return true;
           return `${item.title || ''} ${item.content || ''} ${item.extension || ''}`.toLocaleLowerCase('ru-RU').includes(query);
         });
-        $('#listHeading').textContent = query ? 'РЕЗУЛЬТАТЫ ПОИСКА' : (activeFilter === 'all' ? 'ПОСЛЕДНЕЕ' : 'ПОДБОРКА');
+        const headings = { all:'ПОСЛЕДНЕЕ', files:'ФАЙЛЫ', clipboard:'БУФЕР', notes:'ЗАМЕТКИ', pinned:'ЗАКРЕПЛЁННОЕ', media:'МЕДИА' };
+        $('#listHeading').textContent = query ? 'РЕЗУЛЬТАТЫ ПОИСКА' : (headings[activeFilter] || 'ПОДБОРКА');
         if (!filtered.length) {
+          const messages = {
+            pinned:['Пока ничего не закреплено','Нажми на булавку у заметки, файла или медиафайла — и оно останется сверху.'],
+            media:['Медиатека пока пуста','Добавь MP3, MP4, MPG, OGG или WAV — плеер появится прямо в NOVA.'],
+          };
+          const specific = messages[activeFilter];
           const hasItems = (state.items || []).length > 0;
-          itemsList.innerHTML = `<div class="empty-state"><span>${icon('sparkle', 19)}</span><strong>${hasItems ? 'Ничего не нашлось' : 'Здесь пока тихо'}</strong><span>${hasItems ? 'Измени запрос или выбери другой фильтр.' : 'Перетащи сюда файл, скопируй текст или создай заметку — NOVA всё сохранит.'}</span>${hasItems ? '' : '<button data-action="new-note">Создать заметку</button>'}</div>`;
+          const title = specific ? specific[0] : (hasItems ? 'Ничего не нашлось' : 'Здесь пока тихо');
+          const detail = specific ? specific[1] : (hasItems ? 'Измени запрос или выбери другой фильтр.' : 'Перетащи сюда файл, скопируй текст или создай заметку — NOVA всё сохранит.');
+          itemsList.innerHTML = `<div class="empty-state"><span>${icon('sparkle', 19)}</span><strong>${title}</strong><span>${detail}</span>${hasItems || activeFilter === 'pinned' || activeFilter === 'media' ? '' : '<button data-action="new-note">Создать заметку</button>'}</div>`;
+          return;
+        }
+        if (activeFilter === 'all' && !query) {
+          const pinned = filtered.filter((item) => item.pinned);
+          const recent = filtered.filter((item) => !item.pinned);
+          const sections = [];
+          if (pinned.length) sections.push(`<div class="group-heading">ЗАКРЕПЛЁННОЕ</div>`, pinned.map(itemMarkup).join(''));
+          if (recent.length) {
+            if (pinned.length) sections.push(`<div class="group-heading">НЕДАВНЕЕ</div>`);
+            sections.push(recent.map(itemMarkup).join(''));
+          }
+          itemsList.innerHTML = sections.join('');
           return;
         }
         itemsList.innerHTML = filtered.map(itemMarkup).join('');
+      }
+
+      function formatMediaTime(seconds) {
+        const value = Number(seconds);
+        if (!Number.isFinite(value) || value < 0) return '--:--';
+        const whole = Math.floor(value);
+        const hours = Math.floor(whole / 3600);
+        const minutes = Math.floor((whole % 3600) / 60);
+        const secs = whole % 60;
+        return hours ? `${hours}:${String(minutes).padStart(2,'0')}:${String(secs).padStart(2,'0')}` : `${minutes}:${String(secs).padStart(2,'0')}`;
+      }
+      function syncMediaControls() {
+        const element = currentMediaElement;
+        const playing = Boolean(element && !element.paused && !element.ended);
+        mediaDock.classList.toggle('is-playing', playing);
+        mediaToggleButton.innerHTML = icon(playing ? 'pause' : 'play', 13);
+        mediaToggleButton.setAttribute('aria-label', playing ? 'Пауза' : 'Воспроизвести');
+        mediaToggleButton.title = playing ? 'Пауза' : 'Воспроизвести';
+        collapsedMediaToggle.innerHTML = icon(playing ? 'pause' : 'play', 12);
+        collapsedMediaToggle.setAttribute('aria-label', playing ? 'Пауза' : 'Воспроизвести');
+        collapsedMediaToggle.title = playing ? 'Пауза' : 'Воспроизвести';
+        const duration = element && Number.isFinite(element.duration) ? element.duration : 0;
+        const current = element && Number.isFinite(element.currentTime) ? element.currentTime : 0;
+        $('#mediaCurrent').textContent = formatMediaTime(current);
+        $('#mediaDuration').textContent = formatMediaTime(duration);
+        if (document.activeElement !== mediaSeek) mediaSeek.value = String(duration ? Math.round(current / duration * 1000) : 0);
+        $('#mediaMuteButton').innerHTML = icon(element && (element.muted || element.volume === 0) ? 'volume-off' : 'volume', 14);
+        $('#mediaMuteButton').setAttribute('aria-label', element && (element.muted || element.volume === 0) ? 'Включить звук' : 'Выключить звук');
+        if (element && document.activeElement !== mediaVolume) mediaVolume.value = String(element.volume);
+      }
+      function renderMediaDock() {
+        const active = state.activeMedia;
+        island.classList.toggle('has-active-media', Boolean(active));
+        island.classList.toggle('has-video-media', Boolean(active && active.mediaType === 'video'));
+        $('#collapsedSubtitle').textContent = active ? `${active.title} · NOVA player` : 'всё важное рядом';
+        collapsedMediaToggle.hidden = !active;
+        if (!active || !active.mediaUrl) {
+          if (currentMediaElement) currentMediaElement.pause();
+          mediaAudio.pause(); mediaVideo.pause();
+          mediaAudio.removeAttribute('src'); mediaVideo.removeAttribute('src');
+          mediaAudio.load(); mediaVideo.load();
+          currentMediaElement = null;
+          currentMediaId = '';
+          mediaDock.hidden = true;
+          return;
+        }
+        mediaDock.hidden = false;
+        const isVideo = active.mediaType === 'video';
+        mediaDock.classList.toggle('is-video', isVideo);
+        mediaVideoStage.hidden = !isVideo;
+        $('#mediaTitle').textContent = active.title || 'Без названия';
+        $('#mediaSubtitle').textContent = `${isVideo ? 'ВИДЕО' : 'АУДИО'} · ${active.extension || 'МЕДИА'}${active.pinned ? ' · ЗАКРЕПЛЕНО' : ''}`;
+        const pinButton = $('#mediaPinButton');
+        pinButton.classList.toggle('is-pinned', Boolean(active.pinned));
+        pinButton.setAttribute('aria-label', active.pinned ? 'Открепить медиафайл' : 'Закрепить медиафайл');
+        pinButton.title = active.pinned ? 'Открепить медиафайл' : 'Закрепить медиафайл';
+        if (currentMediaId !== active.id || !currentMediaElement) {
+          mediaAudio.pause(); mediaVideo.pause();
+          mediaAudio.removeAttribute('src'); mediaVideo.removeAttribute('src');
+          currentMediaElement = isVideo ? mediaVideo : mediaAudio;
+          currentMediaId = active.id;
+          currentMediaElement.src = active.mediaUrl;
+          currentMediaElement.load();
+          const initialVolume = Number(mediaVolume.value);
+          currentMediaElement.volume = Number.isFinite(initialVolume) ? initialVolume : 0.8;
+          currentMediaElement.muted = false;
+        }
+        syncMediaControls();
       }
       function render() {
         if (!state) return;
@@ -617,16 +837,26 @@
         liveDot.style.boxShadow = clipOn ? '0 0 0 3px rgba(140,233,202,.1), 0 0 10px rgba(140,233,202,.6)' : 'none';
         $('#clipboardToggle').classList.toggle('on', clipOn);
         $('#clipboardToggle').setAttribute('aria-checked', String(clipOn));
+        const topmostOn = !state.settings || state.settings.alwaysOnTop !== false;
+        $('#alwaysOnTopToggle').classList.toggle('on', topmostOn);
+        $('#alwaysOnTopToggle').setAttribute('aria-checked', String(topmostOn));
         const startupOn = Boolean(state.settings && state.settings.launchAtLogin);
         $('#startupToggle').classList.toggle('on', startupOn);
         $('#startupToggle').setAttribute('aria-checked', String(startupOn));
+        const storage = state.storage || { fileCount:0, totalBytes:0, orphanedFiles:0 };
+        $('#storageCount').textContent = `${storage.fileCount || 0} файлов`;
+        $('#storageSize').textContent = formatBytes(storage.totalBytes || 0);
+        $('#storageFill').style.width = `${Math.min(100, (Number(storage.totalBytes) || 0) / (1024 * 1024 * 1024) * 100)}%`;
+        $('#storageOrphans').textContent = storage.orphanedFiles ? `Найдено лишних копий: ${storage.orphanedFiles}` : 'Потерянных копий нет';
         $$('.filter-chip').forEach((button) => {
           const active = button.dataset.filter === activeFilter;
           button.classList.toggle('active', active);
           button.setAttribute('aria-selected', String(active));
         });
         renderItems();
+        renderMediaDock();
       }
+
       function showToast(message) {
         $('#toastText').textContent = message;
         $('#toast').classList.add('visible');
@@ -737,9 +967,77 @@
           catch (_) { showToast('В демо скопировать не получилось'); }
         }
       }
+      async function selectMedia(id, autoplay = true) {
+        const item = (state.items || []).find((candidate) => candidate.id === id && candidate.kind === 'media');
+        if (!item) return;
+        if (!nativeAPI || !item.mediaUrl) { showToast('Медиаплеер доступен в приложении NOVA'); return; }
+        item.pinned = true;
+        state.activeMedia = { ...item, pinned:true };
+        render();
+        let playPromise = null;
+        if (autoplay && currentMediaElement) playPromise = currentMediaElement.play();
+        try {
+          const result = await nativeAPI.setActiveMedia(id);
+          if (result && result.state) state = result.state;
+          render();
+        } catch (_) {
+          showToast('Не удалось закрепить медиафайл');
+        }
+        if (playPromise) {
+          try { await playPromise; }
+          catch (_) { showToast('Формат или кодек не поддерживается этим плеером'); }
+        }
+      }
+      async function closeMediaPlayer() {
+        mediaAudio.pause(); mediaVideo.pause();
+        if (nativeAPI) state = await nativeAPI.closeActiveMedia();
+        else state.activeMedia = null;
+        render();
+        showToast('Плеер закрыт · медиафайл остался в закреплённом');
+      }
+      async function toggleMediaPlayback() {
+        if (!currentMediaElement) { showToast('Сначала выбери медиафайл'); return; }
+        if (currentMediaElement.paused || currentMediaElement.ended) {
+          try { await currentMediaElement.play(); }
+          catch (_) { showToast('Формат или кодек не поддерживается этим плеером'); }
+        } else currentMediaElement.pause();
+        syncMediaControls();
+      }
+      function seekMedia(offset) {
+        if (!currentMediaElement || !Number.isFinite(currentMediaElement.duration)) return;
+        currentMediaElement.currentTime = Math.max(0, Math.min(currentMediaElement.duration, currentMediaElement.currentTime + offset));
+        syncMediaControls();
+      }
+      function toggleMediaMute() {
+        if (!currentMediaElement) return;
+        currentMediaElement.muted = !currentMediaElement.muted;
+        syncMediaControls();
+      }
+      async function toggleAlwaysOnTop() {
+        const enabled = !(state.settings && state.settings.alwaysOnTop !== false);
+        if (nativeAPI) state = await nativeAPI.setAlwaysOnTop(enabled);
+        else { state.settings.alwaysOnTop = enabled; savePreview(); }
+        render();
+        showToast(enabled ? 'Остров поверх окон' : 'Режим обычного окна');
+      }
+      async function cleanStorage() {
+        if (!nativeAPI) { showToast('Очистка хранилища доступна в приложении'); return; }
+        const orphanCount = Number(state.storage && state.storage.orphanedFiles) || 0;
+        if (!orphanCount) { showToast('Потерянных копий нет'); return; }
+        const confirmed = window.confirm(`Удалить ${orphanCount} файл(ов), на которые больше не ссылается NOVA? Исходники за пределами папки NOVA не затрагиваются.`);
+        if (!confirmed) return;
+        try {
+          const result = await nativeAPI.cleanOrphanedStorage();
+          if (result && result.state) state = result.state;
+          render();
+          showToast(result && result.removed ? `Лишних копий удалено: ${result.removed}` : 'Хранилище уже чистое');
+        } catch (_) { showToast('Не удалось проверить хранилище'); }
+      }
+
       async function openItem(id) {
         const item = state.items.find((candidate) => candidate.id === id);
         if (!item) return;
+        if (item.kind === 'media') { await selectMedia(id, true); return; }
         if (nativeAPI) {
           const result = await nativeAPI.openItem(id);
           if (result && result.message) showToast(result.message);
@@ -817,7 +1115,16 @@
             case 'delete': await deleteItem(id); break;
             case 'toggle-clipboard': await toggleClipboard(); break;
             case 'toggle-startup': await toggleStartup(); break;
+            case 'toggle-topmost': await toggleAlwaysOnTop(); break;
             case 'clear-clipboard': await clearClipboard(); break;
+            case 'clean-storage': await cleanStorage(); break;
+            case 'play-media': await selectMedia(id, true); break;
+            case 'media-toggle': await toggleMediaPlayback(); break;
+            case 'media-back': seekMedia(-10); break;
+            case 'media-forward': seekMedia(10); break;
+            case 'media-mute': toggleMediaMute(); break;
+            case 'media-pin': if (state.activeMedia) await togglePin(state.activeMedia.id); break;
+            case 'media-close': await closeMediaPlayer(); break;
             case 'open-storage':
               if (nativeAPI) await nativeAPI.openStorage(); else showToast('В приложении откроется папка NOVA');
               break;
@@ -843,6 +1150,22 @@
         if (card && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); await openItem(card.dataset.id); }
       });
       searchInput.addEventListener('input', renderItems);
+      mediaSeek.addEventListener('input', () => {
+        if (!currentMediaElement || !Number.isFinite(currentMediaElement.duration)) return;
+        currentMediaElement.currentTime = currentMediaElement.duration * (Number(mediaSeek.value) / 1000);
+        syncMediaControls();
+      });
+      mediaVolume.addEventListener('input', () => {
+        const volume = Math.max(0, Math.min(1, Number(mediaVolume.value)));
+        mediaAudio.volume = volume; mediaVideo.volume = volume;
+        if (volume > 0 && currentMediaElement) currentMediaElement.muted = false;
+        syncMediaControls();
+      });
+      for (const element of [mediaAudio, mediaVideo]) {
+        for (const name of ['timeupdate','durationchange','loadedmetadata','play','pause','ended','seeked','volumechange']) element.addEventListener(name, syncMediaControls);
+        element.addEventListener('error', () => { if (currentMediaElement === element) showToast('Формат или кодек не поддерживается этим плеером'); });
+      }
+      mediaVideo.addEventListener('dblclick', toggleMediaPlayback);
       $('#fileInput').addEventListener('change', (event) => { mockAddFiles(event.target.files); event.target.value = ''; });
       modalOverlay.addEventListener('click', (event) => { if (event.target === modalOverlay) closeComposer(); });
 

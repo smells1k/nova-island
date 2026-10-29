@@ -22,9 +22,15 @@ const { fileURLToPath, pathToFileURL } = require('node:url');
 const PRODUCT_NAME = 'NOVA Island';
 const STORE_VERSION = 1;
 const MAX_ITEMS = 180;
+const MEDIA_TYPE_BY_EXTENSION = {
+  MP3: 'audio', M4A: 'audio', OGG: 'audio', WAV: 'audio', AAC: 'audio', FLAC: 'audio',
+  MP4: 'video', MPG: 'video', MPEG: 'video', OGV: 'video', WEBM: 'video', MOV: 'video',
+};
 const DEFAULT_SETTINGS = {
   clipboardEnabled: true,
   launchAtLogin: false,
+  alwaysOnTop: true,
+  mediaPlayerItemId: '',
 };
 
 let mainWindow = null;
@@ -119,7 +125,13 @@ function publicItem(item) {
     source: item.source || 'manual',
     extension: item.extension || '',
     size: Number(item.size) || 0,
+    mediaType: item.mediaType || '',
   };
+
+  if (item.kind === 'media' && item.storedPath && isInsideLibrary(item.storedPath)) {
+    result.mediaType = item.mediaType || 'audio';
+    result.mediaUrl = pathToFileURL(item.storedPath).href;
+  }
 
   if (item.kind === 'image' && item.storedPath) {
     try {
@@ -135,8 +147,11 @@ function publicItem(item) {
 }
 
 function publicState() {
+  const activeMedia = store.items.find((item) => item.id === store.settings.mediaPlayerItemId && item.kind === 'media') || null;
   return {
     items: sortedItems().map(publicItem),
+    activeMedia: activeMedia ? publicItem(activeMedia) : null,
+    storage: getStorageStats(),
     settings: { ...store.settings },
     expanded,
   };
@@ -177,8 +192,8 @@ function setExpanded(nextValue, shouldFocus = true) {
   if (next) {
     mainWindow.setBounds(makeWindowBounds(true), false);
     if (!mainWindow.isVisible()) mainWindow.show();
-    mainWindow.setAlwaysOnTop(true);
-    mainWindow.moveTop();
+    mainWindow.setAlwaysOnTop(Boolean(store.settings.alwaysOnTop));
+    if (store.settings.alwaysOnTop) mainWindow.moveTop();
     if (shouldFocus) mainWindow.focus();
     if (mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
       mainWindow.webContents.send('nova:expanded', true);
@@ -192,7 +207,7 @@ function setExpanded(nextValue, shouldFocus = true) {
       if (!expanded && mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.setBounds(makeWindowBounds(false), false);
       }
-    }, 390);
+    }, 650);
   }
 }
 
@@ -261,7 +276,7 @@ function createWindow() {
     maximizable: false,
     fullscreenable: false,
     skipTaskbar: true,
-    alwaysOnTop: true,
+    alwaysOnTop: Boolean(store.settings.alwaysOnTop),
     roundedCorners: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -272,7 +287,7 @@ function createWindow() {
     },
   });
 
-  mainWindow.setAlwaysOnTop(true);
+  mainWindow.setAlwaysOnTop(Boolean(store.settings.alwaysOnTop));
   mainWindow.setMenu(null);
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
@@ -308,6 +323,52 @@ function isInsideLibrary(filePath) {
   return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
+function getStorageStats() {
+  const tracked = new Set(store.items.filter((item) => item.storedPath && isInsideLibrary(item.storedPath)).map((item) => path.resolve(item.storedPath)));
+  const stats = { fileCount: 0, totalBytes: 0, orphanedFiles: 0 };
+  if (!libraryPath) return stats;
+  try {
+    for (const entry of fs.readdirSync(libraryPath, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      const filePath = path.join(libraryPath, entry.name);
+      try {
+        const fileStat = fs.statSync(filePath);
+        stats.totalBytes += fileStat.size;
+        if (tracked.has(path.resolve(filePath))) stats.fileCount += 1;
+        else stats.orphanedFiles += 1;
+      } catch {
+        // Ignore files that disappear while the folder is being measured.
+      }
+    }
+  } catch (error) {
+    console.warn('[NOVA] Could not inspect the local library:', error.message);
+  }
+  return stats;
+}
+
+async function cleanOrphanedFiles() {
+  const tracked = new Set(store.items.filter((item) => item.storedPath && isInsideLibrary(item.storedPath)).map((item) => path.resolve(item.storedPath)));
+  let removed = 0;
+  try {
+    for (const entry of await fs.promises.readdir(libraryPath, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      const filePath = path.join(libraryPath, entry.name);
+      if (tracked.has(path.resolve(filePath))) continue;
+      try {
+        await fs.promises.unlink(filePath);
+        removed += 1;
+      } catch (error) {
+        console.warn('[NOVA] Could not remove orphaned file:', error.message);
+      }
+    }
+  } catch (error) {
+    console.warn('[NOVA] Could not clean orphaned library files:', error.message);
+  }
+  persistStore();
+  broadcastState();
+  return { removed, state: publicState() };
+}
+
 async function importFile(sourcePath, source = 'drop') {
   if (typeof sourcePath !== 'string' || !path.isAbsolute(sourcePath)) {
     throw new Error('Путь к файлу недоступен. Добавьте файл через кнопку «Файл».');
@@ -324,9 +385,11 @@ async function importFile(sourcePath, source = 'drop') {
   await fs.promises.copyFile(sourcePath, storedPath);
 
   const imageExts = new Set(['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP', 'BMP', 'TIFF', 'TIF']);
+  const mediaType = MEDIA_TYPE_BY_EXTENSION[extension] || '';
   const item = {
     id: makeId(),
-    kind: imageExts.has(extension) ? 'image' : 'file',
+    kind: imageExts.has(extension) ? 'image' : (mediaType ? 'media' : 'file'),
+    mediaType,
     title: originalName,
     source,
     createdAt: new Date().toISOString(),
@@ -422,6 +485,7 @@ function trimStore() {
   const toRemove = store.items.length - MAX_ITEMS;
   for (const item of removable.slice(0, toRemove)) {
     store.items = store.items.filter((candidate) => candidate.id !== item.id);
+    if (store.settings.mediaPlayerItemId === item.id) store.settings.mediaPlayerItemId = '';
     if (item.storedPath && isInsideLibrary(item.storedPath)) {
       fs.promises.unlink(item.storedPath).catch(() => {});
     }
@@ -560,6 +624,34 @@ async function setClipboardEnabled(enabled) {
   return publicState();
 }
 
+function activateMedia(id) {
+  const item = store.items.find((candidate) => candidate.id === id && candidate.kind === 'media');
+  if (!item) return { ok: false, message: 'Медиафайл не найден', state: publicState() };
+  item.pinned = true;
+  store.settings.mediaPlayerItemId = item.id;
+  persistStore();
+  broadcastState();
+  return { ok: true, message: 'Медиаплеер закреплён', state: publicState() };
+}
+
+function closeActiveMedia() {
+  store.settings.mediaPlayerItemId = '';
+  persistStore();
+  broadcastState();
+  return publicState();
+}
+
+function setAlwaysOnTop(enabled) {
+  store.settings.alwaysOnTop = Boolean(enabled);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setAlwaysOnTop(store.settings.alwaysOnTop);
+    if (store.settings.alwaysOnTop && mainWindow.isVisible()) mainWindow.moveTop();
+  }
+  persistStore();
+  broadcastState();
+  return publicState();
+}
+
 async function copyItemToClipboard(item) {
   if (!item) return { ok: false, message: 'Элемент не найден' };
   try {
@@ -576,7 +668,7 @@ async function copyItemToClipboard(item) {
       return { ok: true, message: 'Изображение скопировано' };
     }
 
-    if (item.kind === 'file' && item.storedPath) {
+    if ((item.kind === 'file' || item.kind === 'media') && item.storedPath) {
       const uri = pathToFileURL(item.storedPath).href;
       await clipboard.write([new ClipboardItem({ 'text/uri-list': uri })]);
       lastClipboardUriKey = path.resolve(item.storedPath);
@@ -651,6 +743,7 @@ function registerIpc() {
     const item = store.items.find((candidate) => candidate.id === id);
     if (!item) return publicState();
     store.items = store.items.filter((candidate) => candidate.id !== id);
+    if (store.settings.mediaPlayerItemId === id) store.settings.mediaPlayerItemId = '';
     if (item.storedPath && isInsideLibrary(item.storedPath)) {
       await fs.promises.unlink(item.storedPath).catch(() => {});
     }
@@ -660,6 +753,7 @@ function registerIpc() {
   });
   ipcMain.handle('nova:clear-clipboard', async () => {
     const removed = store.items.filter((item) => item.source === 'clipboard');
+    if (removed.some((item) => item.id === store.settings.mediaPlayerItemId)) store.settings.mediaPlayerItemId = '';
     store.items = store.items.filter((item) => item.source !== 'clipboard');
     await Promise.all(removed.map((item) => {
       if (item.storedPath && isInsideLibrary(item.storedPath)) return fs.promises.unlink(item.storedPath).catch(() => {});
@@ -670,6 +764,10 @@ function registerIpc() {
     return publicState();
   });
   ipcMain.handle('nova:set-clipboard-enabled', (_event, enabled) => setClipboardEnabled(enabled));
+  ipcMain.handle('nova:set-always-on-top', (_event, enabled) => setAlwaysOnTop(enabled));
+  ipcMain.handle('nova:set-active-media', (_event, id) => activateMedia(id));
+  ipcMain.handle('nova:close-active-media', () => closeActiveMedia());
+  ipcMain.handle('nova:clean-orphaned-storage', () => cleanOrphanedFiles());
   ipcMain.handle('nova:set-launch-at-login', (_event, enabled) => {
     store.settings.launchAtLogin = Boolean(enabled);
     try {
@@ -690,6 +788,7 @@ function registerIpc() {
   ipcMain.handle('nova:open-item', async (_event, id) => {
     const item = store.items.find((candidate) => candidate.id === id);
     if (!item) return { ok: false, message: 'Элемент не найден' };
+    if (item.kind === 'media') return activateMedia(id);
     if (item.kind === 'file' || item.kind === 'image') {
       const error = await shell.openPath(item.storedPath || '');
       return { ok: !error, message: error || 'Открываю файл…' };

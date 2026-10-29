@@ -1,16 +1,11 @@
-# Publish the source on GitHub
+# Публикация NOVA Island
 
-This is the source project only. `release/`, `node_modules/`, local test screenshots, and build caches are intentionally excluded. The Windows installer is about 116 MB; keep it out of normal Git history and attach it to a GitHub Release instead.
+Публичный репозиторий уже создан: [smells1k/nova-island](https://github.com/smells1k/nova-island), основная ветка — `main`. Не создавай репозиторий заново.
 
-1. Create an empty repository on GitHub (do not initialize it with a README or license).
-2. In this folder, run:
+Исходники хранятся в Git; установщик `.exe` (около 116 МБ) нужно прикладывать к GitHub Release, а не добавлять в обычную историю Git. Для новой версии:
 
-```bash
-git init -b main
-git add .
-git commit -m "Initial NOVA Island source"
-git remote add origin https://github.com/YOUR-NAME/YOUR-REPOSITORY.git
-git push -u origin main
-```
+1. Обнови версию в `package.json` и `package-lock.json`, проверь README и собери установщик `npm run dist:win`.
+2. Создай commit и отправь `main` в существующий репозиторий.
+3. Создай релиз с соответствующим тегом `vX.Y.Z` и приложи `release/NOVA-Island-Setup-X.Y.Z-x64.exe`.
 
-Authenticate using GitHub's browser-based sign-in or Git Credential Manager. Do not paste a personal access token into chat.
+Аутентифицируйся через браузерный вход GitHub или Git Credential Manager. Не вставляй PAT в чат, исходники или URL; отзывай скомпрометированные токены.
