@@ -22,7 +22,7 @@
   let intensity = new URLSearchParams(location.search).get('intensity') || 'normal';
   let preset = presets[intensity] || presets.normal;
   let width = 1, height = 1, ratio = 1, last = performance.now(), frame = 0;
-  let streaks = [], beads = [], splashes = [];
+  let streaks = [], beads = [], splashes = [], surfaces = [];
   const rand = (min,max) => min + Math.random() * (max-min);
   function resize() {
     ratio = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -47,14 +47,41 @@
     if (!presets[value] || value === intensity) return;
     intensity=value; preset=presets[value]; resize();
   }
-  if (window.rainAPI) window.rainAPI.onIntensity(setIntensity);
+  if (window.rainAPI) {
+    window.rainAPI.onIntensity(setIntensity);
+    window.rainAPI.onSurfaces((next) => {
+      surfaces = next.filter((surface) => Number.isFinite(surface.x) && Number.isFinite(surface.y)
+        && Number.isFinite(surface.width) && surface.width > 0 && surface.height > 0);
+      for (const bead of beads) {
+        if (!bead.ledgeId) continue;
+        const current = surfaces.find((surface) => surface.id === bead.ledgeId);
+        if (current) bead.ledge = current;
+        else { bead.ledge = null; bead.ledgeId = ''; bead.vy = 12; }
+      }
+    });
+  }
   window.addEventListener('resize', resize, { passive:true });
+  function findWindowEdge(fromY,toY,x) {
+    let hit=null;
+    for (const surface of surfaces) {
+      const right=surface.x+surface.width;
+      if (x >= surface.x && x <= right && fromY < surface.y && toY >= surface.y && (!hit || surface.y < hit.y)) hit=surface;
+    }
+    return hit;
+  }
   function tick(now) {
     const dt=Math.min(.04,Math.max(.001,(now-last)/1000)); last=now;
     ctx.clearRect(0,0,width,height);
     const wind=Math.sin(now/4700)*23;
     for (const s of streaks) {
-      s.x += (wind+s.sway)*dt; s.y += s.v*dt;
+      const oldY=s.y, nextX=s.x+(wind+s.sway)*dt, nextY=s.y+s.v*dt;
+      const edge=findWindowEdge(oldY,nextY,nextX);
+      if (edge) {
+        addSplash(nextX,edge.y,.85);
+        Object.assign(s,makeStreak(false));
+        continue;
+      }
+      s.x=nextX; s.y=nextY;
       if (s.y > height+15 || s.x < -50 || s.x > width+50) {
         if (s.y > height-3) addSplash(Math.max(0,Math.min(width,s.x)),height-3,.7);
         Object.assign(s,makeStreak(false));
@@ -63,9 +90,21 @@
       ctx.strokeStyle=`rgba(201,224,255,${s.alpha})`; ctx.lineWidth=.75; ctx.stroke();
     }
     for (let i=0;i<beads.length;i++) {
-      const b=beads[i]; b.phase+=dt*1.4; b.vy+=dt*5.5*preset.speed;
-      b.x+=(b.vx+wind*.09+Math.sin(b.phase)*2.5)*dt; b.y+=b.vy*dt;
-      if (b.y > height-7) { addSplash(b.x,height-5,b.r*.34); Object.assign(b,makeBead(false)); }
+      const b=beads[i]; b.phase+=dt*1.4;
+      if (b.ledge) {
+        b.x += b.vx*dt; b.y=b.ledge.y-b.r;
+        if (b.x < b.ledge.x-2 || b.x > b.ledge.x+b.ledge.width+2) { b.ledge=null; b.ledgeId=''; b.vy=14; }
+      } else {
+        const oldY=b.y, nextX=b.x+(b.vx+wind*.09+Math.sin(b.phase)*2.5)*dt;
+        b.vy+=dt*5.5*preset.speed;
+        const nextY=b.y+b.vy*dt, edge=findWindowEdge(oldY,nextY,nextX);
+        b.x=nextX; b.y=nextY;
+        if (edge) {
+          b.ledge=edge; b.ledgeId=edge.id; b.y=edge.y-b.r;
+          b.vx=rand(17,39)*(Math.random()<.5?-1:1); b.vy=0;
+          addSplash(b.x,edge.y,b.r*.3);
+        } else if (b.y > height-7) { addSplash(b.x,height-5,b.r*.34); Object.assign(b,makeBead(false)); }
+      }
       if (b.x < 0 || b.x > width) b.vx *= -1;
       for (let j=i+1;j<beads.length;j++) {
         const other=beads[j], dx=other.x-b.x, dy=other.y-b.y, distance=Math.hypot(dx,dy);

@@ -294,6 +294,59 @@ public static class NovaFullscreenProbe {
 '@; [Console]::Write([NovaFullscreenProbe]::Read())
 `;
 
+const WINDOW_SURFACE_PROBE = String.raw`
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class NovaRainWindowProbe {
+  [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+  public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+  [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+  [DllImport("user32.dll", SetLastError=true)] public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+}
+'@ -ErrorAction SilentlyContinue
+$ownPid = __OWN_PID__
+$items = [System.Collections.Generic.List[object]]::new()
+[NovaRainWindowProbe]::EnumWindows({
+  param($handle, $state)
+  [uint32]$windowPid = 0
+  [void][NovaRainWindowProbe]::GetWindowThreadProcessId($handle, [ref]$windowPid)
+  if ($windowPid -eq $ownPid -or -not [NovaRainWindowProbe]::IsWindowVisible($handle) -or [NovaRainWindowProbe]::IsIconic($handle)) { return $true }
+  $rect = [NovaRainWindowProbe+RECT]::new()
+  if (-not [NovaRainWindowProbe]::GetWindowRect($handle, [ref]$rect)) { return $true }
+  $width = $rect.Right - $rect.Left; $height = $rect.Bottom - $rect.Top
+  if ($width -lt 170 -or $height -lt 90) { return $true }
+  $items.Add([PSCustomObject]@{ id=$handle.ToInt64().ToString(); x=$rect.Left; y=$rect.Top; width=$width; height=$height })
+  return $true
+}, [IntPtr]::Zero) | Out-Null
+$items | ConvertTo-Json -Compress
+`;
+
+async function getRainWindowSurfaces(ownPid, virtualBounds) {
+  if (process.platform !== 'win32') return { supported: false, surfaces: [] };
+  try {
+    const script = WINDOW_SURFACE_PROBE.replace('__OWN_PID__', String(Math.max(0, Math.trunc(Number(ownPid) || 0))));
+    const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { timeout: 3500, windowsHide: true, maxBuffer: 512 * 1024 });
+    const parsed = JSON.parse(String(stdout || '[]').trim() || '[]');
+    const entries = Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+    const bounds = virtualBounds && typeof virtualBounds === 'object' ? virtualBounds : { x:0, y:0, width:0, height:0 };
+    const surfaces = entries.map((entry) => ({
+      id: String(entry.id || ''), x: Number(entry.x) - (Number(bounds.x) || 0), y: Number(entry.y) - (Number(bounds.y) || 0),
+      width: Number(entry.width), height: Number(entry.height),
+    })).filter((item) => item.id && [item.x,item.y,item.width,item.height].every(Number.isFinite)
+      && item.width >= 170 && item.height >= 90
+      && !(item.x <= 2 && item.y <= 2 && item.width >= (Number(bounds.width) || Infinity) * .85 && item.height >= (Number(bounds.height) || Infinity) * .85)
+      && item.x < (Number(bounds.width) || Infinity) && item.y < (Number(bounds.height) || Infinity)
+      && item.x + item.width > 0 && item.y + item.height > 0);
+    return { supported: true, surfaces: surfaces.slice(0, 60) };
+  } catch {
+    return { supported: true, surfaces: [] };
+  }
+}
+
 async function isExternalFullscreen(displays, ownPid) {
   if (process.platform !== 'win32') return { supported: false, fullscreen: false };
   try {
@@ -321,6 +374,7 @@ module.exports = {
   validatePingTarget,
   clearOldUserTempFiles,
   getMachineSnapshot,
+  getRainWindowSurfaces,
   getRepositoryStatus,
   isExternalFullscreen,
   openTerminal,

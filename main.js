@@ -70,6 +70,8 @@ let focusTimerInterval = null;
 let collapseTimer = null;
 let fullscreenTimer = null;
 let fullscreenProbeRunning = false;
+let rainSurfaceTimer = null;
+let rainSurfaceProbeRunning = false;
 let clipboardPulseTimer = null;
 let clipboardPulseUntil = 0;
 let isGameHidden = false;
@@ -561,8 +563,38 @@ function createTray() {
   }
 }
 
+async function updateRainWindowSurfaces() {
+  if (process.platform !== 'win32' || !store.settings.rainEnabled || rainSurfaceProbeRunning || !rainWindow || rainWindow.isDestroyed() || rainWindow.webContents.isLoading()) return;
+  rainSurfaceProbeRunning = true;
+  try {
+    const displays = screen.getAllDisplays();
+    const bounds = {
+      x: Math.min(...displays.map((display) => display.bounds.x)),
+      y: Math.min(...displays.map((display) => display.bounds.y)),
+      right: Math.max(...displays.map((display) => display.bounds.x + display.bounds.width)),
+      bottom: Math.max(...displays.map((display) => display.bounds.y + display.bounds.height)),
+    };
+    bounds.width = bounds.right - bounds.x; bounds.height = bounds.bottom - bounds.y;
+    const result = await systemServices.getRainWindowSurfaces(process.pid, bounds);
+    if (rainWindow && !rainWindow.isDestroyed() && result && Array.isArray(result.surfaces)) {
+      rainWindow.webContents.send('nova:rain-surfaces', result.surfaces);
+    }
+  } catch (error) {
+    console.warn('[NOVA] Rain window surface scan failed:', error.message);
+  } finally { rainSurfaceProbeRunning = false; }
+}
+
+function configureRainSurfacePolling() {
+  if (rainSurfaceTimer) { clearInterval(rainSurfaceTimer); rainSurfaceTimer = null; }
+  if (process.platform === 'win32' && store.settings.rainEnabled) {
+    updateRainWindowSurfaces();
+    rainSurfaceTimer = setInterval(updateRainWindowSurfaces, 1800);
+  }
+}
+
 function syncRainOverlay() {
   const enabled = Boolean(store.settings.rainEnabled);
+  configureRainSurfacePolling();
   if (!enabled) {
     if (rainWindow && !rainWindow.isDestroyed()) rainWindow.destroy();
     rainWindow = null;
@@ -1483,6 +1515,8 @@ app.on('before-quit', () => {
   isQuitting = true;
   if (rainWindow && !rainWindow.isDestroyed()) rainWindow.destroy();
   rainWindow = null;
+  if (rainSurfaceTimer) clearInterval(rainSurfaceTimer);
+  rainSurfaceTimer = null;
   if (clipboardTimer) clearInterval(clipboardTimer);
   if (focusTimerInterval) clearInterval(focusTimerInterval);
   if (fullscreenTimer) clearInterval(fullscreenTimer);
