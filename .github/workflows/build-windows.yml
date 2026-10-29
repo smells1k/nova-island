@@ -17,7 +17,7 @@ on:
       - '.github/workflows/build-windows.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -44,10 +44,20 @@ jobs:
             Write-Host "::error title=Windows packaging failed::$details"
           }
           exit $exitCode
-      - name: Upload installer
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: NOVA-Island-Windows-x64
           path: release/*.exe
           if-no-files-found: error
           retention-days: 14
+      - name: Publish GitHub release
+        if: github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $installer = Get-ChildItem release -Filter '*.exe' | Select-Object -ExpandProperty FullName
+          if (-not $installer) { throw 'Installer was not produced.' }
+          gh release create "v$version" $installer --title "NOVA Island $version — обновлённый интерфейс" --notes "Обновление интерфейса коллекции: фильтры сгруппированы по категориям. Установщик для Windows x64." --target $env:GITHUB_SHA
