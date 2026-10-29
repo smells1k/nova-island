@@ -116,7 +116,9 @@
     .island.has-focus-timer:not(.expanded) .collapsed-subtitle { display:flex; color:#a5efd6; }
     .collapsed-focus-tag { display:inline-flex; align-items:center; gap:3px; flex:0 0 auto; padding:2px 5px; border:1px solid rgba(140,233,202,.16); border-radius:99px; color:#a5efd6; background:rgba(95,196,162,.09); font-size:8px; font-variant-numeric:tabular-nums; }
     .collapsed-pin-mark { display:inline-flex; flex:0 0 auto; color:#c5baff; }
-    .collapsed-preview-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .collapsed-preview-title { display:inline-block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .island.has-active-media:not(.expanded):hover .collapsed-preview-title.marquee { text-overflow:clip; animation:track-marquee 5s linear infinite alternate; }
+    @keyframes track-marquee { 0%,16% { transform:translateX(0); } 84%,100% { transform:translateX(var(--marquee-distance,0px)); } }
     .collapsed-preview-more { flex:0 0 auto; color:#888b9b; }
     .island.has-active-media:not(.expanded) .count-badge { display:none; }
     .live-dot { width:6px; height:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 0 3px rgba(140,233,202,.1), 0 0 11px rgba(140,233,202,.65); flex:0 0 auto; animation:live-pulse 2.2s ease-in-out infinite; }
@@ -315,6 +317,65 @@
     .footer-shortcut { display:flex; align-items:center; gap:5px; white-space:nowrap; color:#7a7e8d; }
     .footer-shortcut kbd { padding:3px 5px; border:1px solid rgba(255,255,255,.09); border-radius:5px; color:#9699a7; font:inherit; background:rgba(255,255,255,.035); }
 
+    .main-tabs { display:flex; align-items:center; gap:5px; flex:0 0 30px; margin-top:8px; padding:2px; border:1px solid rgba(255,255,255,.055); border-radius:11px; background:rgba(0,0,0,.16); }
+    .main-tab { height:24px; min-width:0; flex:1; padding:0 9px; border:1px solid transparent; border-radius:8px; color:#858998; background:transparent; font-size:9px; cursor:pointer; white-space:nowrap; transition:all .18s ease; }
+    .main-tab:hover { color:#e5e3f1; background:rgba(255,255,255,.045); }
+    .main-tab.active { color:#e4e0ff; border-color:rgba(181,168,255,.16); background:rgba(151,132,255,.11); }
+    .expanded-view.settings-active .main-tabs { display:none; }
+    .system-view { display:none; flex:1; flex-direction:column; min-width:0; min-height:0; padding-top:10px; }
+    .system-view.visible { display:flex; }
+    .system-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto; padding:0 2px 9px; }
+    .system-heading h2 { margin:0; color:#f1f0f8; font-size:16px; letter-spacing:-.04em; font-weight:640; }
+    .system-heading p { margin:3px 0 0; color:#838795; font-size:8px; }
+    .system-heading button { width:26px; height:26px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.08); border-radius:8px; color:#a7a9b6; background:rgba(255,255,255,.04); cursor:pointer; }
+    .system-scroll { display:flex; flex-direction:column; gap:8px; min-height:0; flex:1; overflow:auto; padding:0 2px 4px 0; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.13) transparent; }
+    .system-card { padding:10px; border:1px solid rgba(255,255,255,.065); border-radius:14px; background:rgba(255,255,255,.035); }
+    .system-card-title { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; color:#dedee8; font-size:9px; font-weight:650; letter-spacing:.015em; }
+    .system-card-subtitle { margin-top:-4px; margin-bottom:8px; color:#7e8290; font-size:8px; line-height:1.45; }
+    .system-badge { padding:3px 6px; border:1px solid rgba(255,255,255,.08); border-radius:99px; color:#9a9eaa; background:rgba(0,0,0,.15); font-size:7px; white-space:nowrap; }
+    .system-badge.good { color:#9de8cd; border-color:rgba(140,233,202,.15); background:rgba(92,190,157,.08); }
+    .system-badge.warn { color:#ffc78f; border-color:rgba(255,189,138,.15); background:rgba(235,158,103,.07); }
+    .metric-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+    .metric-card { min-width:0; padding:8px; border:1px solid rgba(255,255,255,.055); border-radius:11px; background:rgba(0,0,0,.15); }
+    .metric-top { display:flex; align-items:center; justify-content:space-between; gap:5px; color:#858998; font-size:8px; }
+    .metric-value { margin-top:4px; color:#f1eff9; font-size:14px; font-weight:680; font-variant-numeric:tabular-nums; letter-spacing:-.03em; }
+    .metric-value small { margin-left:2px; color:#9699a7; font-size:8px; font-weight:500; letter-spacing:0; }
+    .metric-track { height:3px; margin-top:6px; overflow:hidden; border-radius:99px; background:rgba(255,255,255,.07); }
+    .metric-track i { display:block; width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,#a99aff,#8ce9ca); transition:width .35s ease; }
+    .metric-sparkline { display:flex; align-items:flex-end; gap:2px; height:18px; margin-top:5px; opacity:.72; }
+    .metric-sparkline i { flex:1; min-width:2px; border-radius:2px 2px 0 0; background:linear-gradient(180deg,#b5a8ff,#6c61a4); transition:height .25s ease; }
+    .metric-note { min-height:10px; margin-top:5px; color:#757988; font-size:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .system-inline { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; color:#a1a4b1; font-size:8px; }
+    .repo-message { margin-top:7px; color:#d6d5e0; font-size:9px; line-height:1.4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .repo-meta { display:flex; justify-content:space-between; gap:7px; margin-top:5px; color:#737786; font-size:7px; }
+    .ping-row { display:flex; gap:6px; margin-top:7px; }
+    .ping-target { min-width:0; flex:1; height:29px; padding:0 8px; border:1px solid rgba(255,255,255,.08); border-radius:8px; outline:0; color:#e6e4ee; background:rgba(0,0,0,.18); font-size:9px; }
+    .ping-target:focus { border-color:rgba(181,168,255,.38); }
+    .ping-button { height:29px; padding:0 10px; border:1px solid rgba(181,168,255,.16); border-radius:8px; color:#dbd5ff; background:rgba(151,132,255,.1); font-size:8px; cursor:pointer; }
+    .ping-result { margin-top:6px; min-height:12px; color:#8f94a2; font-size:8px; }
+    .ping-result.good { color:#9de8cd; }
+    .ping-result.bad { color:#f0a9a9; }
+    .system-action-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+    .system-action { min-width:0; min-height:40px; padding:5px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border:1px solid rgba(255,255,255,.07); border-radius:10px; color:#c9c8d4; background:rgba(0,0,0,.14); font-size:7px; line-height:1.2; text-align:center; cursor:pointer; transition:all .18s ease; }
+    .system-action:hover { color:#fff; border-color:rgba(181,168,255,.23); background:rgba(151,132,255,.08); }
+    .system-action svg { color:#b5a8ff; }
+    .mic-meter { height:6px; margin-top:8px; overflow:hidden; border-radius:99px; background:rgba(255,255,255,.07); }
+    .mic-meter i { display:block; width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,#8ce9ca,#b5a8ff); transition:width .12s linear; }
+    .system-warning { color:#c5a27c; font-size:8px; line-height:1.5; }
+    .notification-limit { padding:9px; border-left:2px solid rgba(255,189,138,.38); border-radius:0 9px 9px 0; color:#a5a7b2; background:rgba(255,255,255,.025); font-size:8px; line-height:1.5; }
+    .notification-limit strong { color:#e2d1bb; font-weight:600; }
+    .island.has-clipboard-pulse:not(.expanded):not(.has-collapsed-preview) { width:284px; }
+    .island.has-clipboard-pulse:not(.expanded) .collapsed-subtitle { display:flex; gap:5px; color:#c7c0ff; }
+    .clipboard-pulse-icon { display:inline-flex; color:var(--mint); }
+    .island.has-clipboard-pulse:not(.expanded) .collapsed-title { animation:clipboard-pop .42s cubic-bezier(.2,.8,.2,1); }
+    @keyframes clipboard-pop { 0% { transform:translateY(5px) scale(.9); opacity:.4; } 70% { transform:translateY(-1px) scale(1.04); } 100% { transform:translateY(0) scale(1); opacity:1; } }
+    .island.has-active-media:not(.expanded) .collapsed-button { padding-right:105px; }
+    .island.has-active-media:not(.expanded) .collapsed-controls { gap:2px; opacity:0; pointer-events:none; transform:translate(7px,-50%); transition:opacity .18s ease,transform .22s ease; }
+    .island.has-active-media:not(.expanded):hover .collapsed-controls, .island.has-active-media:not(.expanded):focus-within .collapsed-controls { opacity:1; pointer-events:auto; transform:translate(0,-50%); }
+    .collapsed-control.media-mini-control { width:23px; height:23px; }
+    .island.drop-success .drop-veil-icon { color:#a5f1d3; background:rgba(92,190,157,.2); border-color:rgba(140,233,202,.35); transform:scale(1.08); }
+    .drop-veil-icon { transition:transform .25s cubic-bezier(.22,1,.36,1),color .2s ease,background .2s ease; }
+
     .settings-heading { display:flex; align-items:center; gap:10px; margin:0 1px 14px; }
     .back-button { width:28px; height:28px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.08); border-radius:9px; background:rgba(255,255,255,.04); color:#aeb0bd; cursor:pointer; }
     .settings-heading h2 { margin:0; font-size:20px; letter-spacing:-.045em; font-weight:650; }
@@ -421,7 +482,9 @@
         </button>
         <div id="collapsedControls" class="collapsed-controls">
           <button id="collapsedFocusToggle" class="collapsed-control collapsed-focus-toggle" data-action="focus-toggle" aria-label="Приостановить таймер" title="Приостановить таймер" hidden><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14M16 5v14"/></svg></button>
-          <button id="collapsedMediaToggle" class="collapsed-control collapsed-media-toggle" data-action="media-toggle" aria-label="Воспроизвести" title="Воспроизвести" hidden><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.7c0-.8.9-1.3 1.6-.9l9.1 6.1a1.3 1.3 0 0 1 0 2.2l-9.1 6.1c-.7.5-1.6-.1-1.6-.9V5.7Z"/></svg></button>
+          <button id="collapsedMediaPrev" class="collapsed-control media-mini-control" data-action="media-prev" aria-label="Предыдущий трек" title="Предыдущий трек" hidden><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 6v12L10 12z"/></svg></button>
+          <button id="collapsedMediaToggle" class="collapsed-control collapsed-media-toggle media-mini-control" data-action="media-toggle" aria-label="Воспроизвести" title="Воспроизвести" hidden><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.7c0-.8.9-1.3 1.6-.9l9.1 6.1a1.3 1.3 0 0 1 0 2.2l-9.1 6.1c-.7.5-1.6-.1-1.6-.9V5.7Z"/></svg></button>
+          <button id="collapsedMediaNext" class="collapsed-control media-mini-control" data-action="media-next" aria-label="Следующий трек" title="Следующий трек" hidden><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 6v12l10-6z"/></svg></button>
         </div>
       </div>
 
@@ -449,6 +512,11 @@
             </button>
           </div>
         </header>
+
+        <nav class="main-tabs" aria-label="Разделы NOVA">
+          <button class="main-tab active" data-action="home-view" aria-current="page">Остров</button>
+          <button class="main-tab" data-action="system-view">Сеть и скрипты</button>
+        </nav>
 
         <section id="mediaDock" class="media-dock" aria-label="Медиаплеер" hidden>
           <div id="mediaVideoStage" class="media-video-stage" hidden>
@@ -539,6 +607,67 @@
           <div id="itemsList" class="items-list" aria-live="polite"></div>
         </section>
 
+        <section id="systemView" class="system-view" aria-label="Сеть и скрипты">
+          <div class="system-heading">
+            <div><h2>Сеть и скрипты</h2><p>Мониторинг и разрешённые системные действия</p></div>
+            <button data-action="refresh-system" aria-label="Обновить показатели" title="Обновить"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7.5 7.5 0 0 1 12.8-2L20 12M4 12l1.6 5a7.5 7.5 0 0 0 12.8-2"/></svg></button>
+          </div>
+          <div class="system-scroll">
+            <div class="system-card">
+              <div class="system-card-title"><span>Мониторинг железа</span><span id="systemUpdated" class="system-badge">Загрузка…</span></div>
+              <div id="cpuModel" class="system-card-subtitle">Данные запрашиваются только при открытой вкладке.</div>
+              <div class="metric-grid">
+                <div class="metric-card"><div class="metric-top"><span>Процессор</span><span id="cpuValue">—</span></div><div class="metric-track"><i id="cpuBar"></i></div><div id="cpuSparkline" class="metric-sparkline" aria-label="История загрузки процессора"></div><div class="metric-note">Загрузка CPU</div></div>
+                <div class="metric-card"><div class="metric-top"><span>Память</span><span id="ramValue">—</span></div><div class="metric-track"><i id="ramBar"></i></div><div id="ramSparkline" class="metric-sparkline" aria-label="История использования памяти"></div><div id="ramNote" class="metric-note">RAM</div></div>
+                <div class="metric-card"><div class="metric-top"><span>Температура CPU</span><span id="cpuTempValue">—</span></div><div class="metric-note" id="cpuTempNote">Данные датчика появятся, если доступны.</div></div>
+                <div class="metric-card"><div class="metric-top"><span>Температура дисков</span><span id="diskTempValue">—</span></div><div class="metric-note" id="diskTempNote">Не все накопители отдают показания.</div></div>
+              </div>
+              <div class="system-inline" style="margin-top:8px"><span>Discord</span><span id="discordStatus" class="system-badge">Проверка…</span></div>
+              <div class="system-card-subtitle" style="margin:5px 0 0">Показывается только наличие процесса Discord, не факт использования микрофона.</div>
+            </div>
+
+            <div class="system-card">
+              <div class="system-card-title"><span>Репозиторий NOVA</span><button class="system-badge" data-action="open-github">Открыть GitHub</button></div>
+              <div class="system-inline"><span>smells1k/nova-island</span><span id="repoCurrentVersion" class="system-badge">Приложение —</span></div>
+              <div id="repoMessage" class="repo-message">Проверяю последний релиз…</div>
+              <div class="repo-meta"><span id="repoCommit">Последний коммит: —</span><span id="repoChecked">—</span></div>
+              <div id="repoUpdateAction" class="setting-actions" style="display:none;margin-top:8px"><button class="secondary-button" data-action="open-github-release">Открыть релиз</button></div>
+            </div>
+
+            <div class="system-card">
+              <div class="system-card-title"><span>Ping-тестер</span><span id="pingIntervalBadge" class="system-badge">раз в 5 с · вкладка активна</span></div>
+              <div class="system-card-subtitle">Проверка останавливается, когда вкладка закрыта. Можно указать IP или домен.</div>
+              <div class="ping-row"><input id="pingTarget" class="ping-target" value="8.8.8.8" maxlength="253" spellcheck="false" aria-label="Адрес для ping"><button class="ping-button" data-action="ping-now">Проверить</button></div>
+              <div id="pingResult" class="ping-result">Ожидаю запуск теста…</div>
+            </div>
+
+            <div class="system-card">
+              <div class="system-card-title"><span>Микрофон и приложения</span><span id="micPermissionBadge" class="system-badge">выключен</span></div>
+              <div class="setting-row">
+                <div class="setting-text"><div class="setting-title">Показывать уровень микрофона</div><div class="setting-description">Опционально: NOVA считывает только громкость сигнала. Аудио не записывается, не сохраняется и никуда не отправляется; Windows может показать системный индикатор доступа к микрофону.</div></div>
+                <button class="toggle" id="micToggle" data-action="toggle-mic" role="switch" aria-label="Мониторинг уровня микрофона"><span></span></button>
+              </div>
+              <div class="mic-meter" aria-label="Уровень входящего аудио"><i id="micLevelBar"></i></div>
+              <div id="micStatus" class="ping-result">Мониторинг выключен.</div>
+            </div>
+
+            <div class="system-card">
+              <div class="system-card-title"><span>Быстрые системные действия</span><span class="system-badge">только по кнопке</span></div>
+              <div class="system-card-subtitle">Команды фиксированы и проверены; произвольный Bash/PowerShell из интерфейса не запускается. Опасные действия требуют подтверждения.</div>
+              <div class="system-action-grid">
+                <button class="system-action" data-action="system-terminal"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4 5 6 6-6 6M12 17h8"/></svg><span>Запустить терминал</span></button>
+                <button class="system-action" data-action="system-restart-explorer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7.5 7.5 0 0 1 12.8-2L20 12M4 12l1.6 5a7.5 7.5 0 0 0 12.8-2"/></svg><span>Перезапустить Explorer</span></button>
+                <button class="system-action" data-action="system-clean-temp"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg><span>Очистить старый TEMP</span></button>
+              </div>
+            </div>
+
+            <div class="system-card">
+              <div class="system-card-title"><span>Уведомления Windows</span><span class="system-badge warn">ограничение Windows</span></div>
+              <div class="notification-limit"><strong>Забирать и заменять уведомления Telegram/Discord эта сборка не может.</strong> Для чтения системной ленты Windows требует упакованное MSIX-приложение с отдельной capability и разрешением пользователя. NOVA продолжает показывать собственные уведомления таймера через Windows.</div>
+            </div>
+          </div>
+        </section>
+
         <section id="settingsView" class="settings-view">
           <div class="settings-heading">
             <button class="back-button" data-action="back-home" aria-label="Назад"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
@@ -572,6 +701,24 @@
               <div class="setting-row">
                 <div class="setting-text"><div class="setting-title">Поверх всех окон</div><div class="setting-description">Оставлять остров поверх других окон. Если выключить, NOVA будет вести себя как обычное окно.</div></div>
                 <button class="toggle" id="alwaysOnTopToggle" data-action="toggle-topmost" role="switch" aria-label="Поверх всех окон"><span></span></button>
+              </div>
+            </div>
+            <div class="setting-card">
+              <div class="setting-row">
+                <div class="setting-text"><div class="setting-title">Сквозные клики в свёрнутом виде</div><div class="setting-description">Когда остров свёрнут, мышь проходит насквозь. Для открытия используй Ctrl+Shift+Space или меню в трее. Перетаскивание файлов на остров при включённом режиме недоступно.</div></div>
+                <button class="toggle" id="clickThroughToggle" data-action="toggle-click-through" role="switch" aria-label="Сквозные клики"><span></span></button>
+              </div>
+            </div>
+            <div class="setting-card">
+              <div class="setting-row">
+                <div class="setting-text"><div class="setting-title">Игровой режим</div><div class="setting-description">На Windows прячет остров при обнаружении стороннего окна размером во весь экран и показывает его после выхода. Проверка раз в 2,5 секунды.</div></div>
+                <button class="toggle" id="gameModeToggle" data-action="toggle-game-mode" role="switch" aria-label="Игровой режим"><span></span></button>
+              </div>
+            </div>
+            <div class="setting-card">
+              <div class="setting-row">
+                <div class="setting-text"><div class="setting-title">Колесо громкости и яркости</div><div class="setting-description">На свёрнутом острове колесо меняет системную громкость, а Shift+колесо — яркость встроенного дисплея (если Windows сообщает такой датчик).</div></div>
+                <button class="toggle on" id="volumeWheelToggle" data-action="toggle-volume-wheel" role="switch" aria-label="Управление системным колесом"><span></span></button>
               </div>
             </div>
             <div class="setting-card">
@@ -643,6 +790,7 @@
       const island = $('#island');
       const homeView = $('#homeView');
       const settingsView = $('#settingsView');
+      const systemView = $('#systemView');
       const itemsList = $('#itemsList');
       const searchInput = $('#searchInput');
       const modalOverlay = $('#modalOverlay');
@@ -652,6 +800,8 @@
       const collapsedSubtitle = $('#collapsedSubtitle');
       const collapsedControls = $('#collapsedControls');
       const collapsedFocusToggle = $('#collapsedFocusToggle');
+      const collapsedMediaPrev = $('#collapsedMediaPrev');
+      const collapsedMediaNext = $('#collapsedMediaNext');
       const focusCard = $('#focusCard');
       const focusToggleButton = $('#focusToggleButton');
       const mediaDock = $('#mediaDock');
@@ -672,6 +822,21 @@
       let currentMediaId = '';
       let currentMediaElement = null;
       let state;
+      let clipboardPulseTimer = null;
+      let clipboardPulseKind = '';
+      let clipboardPulseUntil = 0;
+      let systemRefreshTimer = null;
+      let pingRefreshTimer = null;
+      let systemSnapshotPending = false;
+      let repositoryRequestPending = false;
+      let pingRequestPending = false;
+      let micStream = null;
+      let micAudioContext = null;
+      let micAnalyser = null;
+      let micSource = null;
+      let micAnimationFrame = 0;
+      let micLevelBuffer = null;
+      const metricHistory = { cpu:[], ram:[] };
 
       const defaultFocusTimer = { mode:'focus', durationMinutes:25, durationMs:25*60*1000, remainingMs:25*60*1000, endsAt:0, running:false };
       const demoDate = (minutesAgo) => new Date(Date.now() - minutesAgo * 60000).toISOString();
@@ -682,7 +847,7 @@
           { id:'demo-3', kind:'note', title:'Идея на потом', content:'Добавить быстрый таймер и маленькие напоминания прямо в остров.', extension:'', size:68, createdAt:demoDate(68), source:'manual', pinned:false },
           { id:'demo-4', kind:'image', title:'Мудборд — 04.png', content:'', extension:'PNG', size:894120, createdAt:demoDate(155), source:'drop', pinned:false }
         ],
-        settings: { clipboardEnabled:true, launchAtLogin:false, alwaysOnTop:true },
+        settings: { clipboardEnabled:true, launchAtLogin:false, alwaysOnTop:true, clickThroughCollapsed:false, gameMode:false, micMonitoringEnabled:false, volumeWheelEnabled:true },
         expanded:true
       };
 
@@ -693,7 +858,7 @@
         } catch (_) {}
         return JSON.parse(JSON.stringify(demoSeed));
       }
-      state = nativeAPI ? { items:[], settings:{clipboardEnabled:true,launchAtLogin:false,alwaysOnTop:true}, activeMedia:null, storage:{fileCount:0,totalBytes:0,orphanedFiles:0}, focusTimer:{ ...defaultFocusTimer }, expanded:false } : loadPreviewState();
+      state = nativeAPI ? { items:[], settings:{clipboardEnabled:true,launchAtLogin:false,alwaysOnTop:true,clickThroughCollapsed:false,gameMode:false,micMonitoringEnabled:false,volumeWheelEnabled:true}, activeMedia:null, storage:{fileCount:0,totalBytes:0,orphanedFiles:0}, focusTimer:{ ...defaultFocusTimer }, expanded:false } : loadPreviewState();
       const themeKey = 'nova-island-theme-v1';
       let currentTheme = 'violet';
       try {
@@ -928,11 +1093,14 @@
         const extraLabel = extraPins ? `+${extraPins}` : '';
         const timer = { ...defaultFocusTimer, ...(state.focusTimer || {}) };
         const focusRunning = Boolean(timer.running);
+        const pulseActive = Boolean(clipboardPulseKind && Date.now() < clipboardPulseUntil);
+        const pulseCopy = { text:['text','Текст скопирован'], link:['open','Ссылка скопирована'], image:['image','Изображение скопировано'], file:['file','Файл добавлен'] }[clipboardPulseKind];
         island.classList.toggle('has-collapsed-preview', Boolean(previewItem));
         island.classList.toggle('has-active-media', Boolean(active));
         island.classList.toggle('has-video-media', Boolean(active && active.mediaType === 'video'));
         island.classList.toggle('has-focus-timer', focusRunning);
         island.classList.toggle('has-collapsed-controls', Boolean(active) || focusRunning);
+        island.classList.toggle('has-clipboard-pulse', pulseActive);
         const previewMarker = previewItem && previewItem.pinned ? 'pin' : (previewItem && previewItem.mediaType === 'video' ? 'video' : 'audio');
         const previewMarkup = previewItem
           ? `<span class="collapsed-pin-mark">${icon(previewMarker, 10)}</span><span class="collapsed-preview-title">${escapeHtml(previewTitle)}</span>${extraLabel ? `<span class="collapsed-preview-more">${extraLabel}</span>` : ''}`
@@ -940,11 +1108,22 @@
         const timerMarkup = focusRunning
           ? `<span class="collapsed-focus-tag">${icon('timer', 9)}${formatFocusTime(timer.endsAt ? Math.max(0, timer.endsAt - Date.now()) : timer.remainingMs)}</span>`
           : '';
-        collapsedSubtitle.innerHTML = `${previewMarkup}${timerMarkup}` || 'всё важное рядом';
-        collapsedSubtitle.title = [previewItem ? `Закреплено: ${previewTitle}${extraLabel ? `; ещё ${extraLabel.slice(1)} элементов` : ''}` : '', focusRunning ? `Таймер: ${formatFocusTime(timer.endsAt ? Math.max(0, timer.endsAt - Date.now()) : timer.remainingMs)}` : ''].filter(Boolean).join(' · ');
-        collapsedButton.title = previewItem ? `Открыть NOVA · ${previewTitle}` : (focusRunning ? `Таймер фокуса · ${formatFocusTime(timer.endsAt - Date.now())}` : 'Нажми, чтобы открыть NOVA');
-        collapsedButton.setAttribute('aria-label', previewItem ? `Открыть NOVA. Закреплено: ${previewTitle}` : (focusRunning ? 'Открыть NOVA. Таймер фокуса запущен' : 'Открыть NOVA'));
+        collapsedSubtitle.innerHTML = pulseActive && pulseCopy
+          ? `<span class="clipboard-pulse-icon">${icon(pulseCopy[0], 10)}</span><span>${pulseCopy[1]}</span>`
+          : (`${previewMarkup}${timerMarkup}` || 'всё важное рядом');
+        requestAnimationFrame(() => {
+          const titleNode = $('.collapsed-preview-title', collapsedSubtitle);
+          if (!titleNode || !active || pulseActive) return;
+          const overflow = titleNode.scrollWidth - titleNode.clientWidth;
+          titleNode.classList.toggle('marquee', overflow > 8);
+          if (overflow > 8) titleNode.style.setProperty('--marquee-distance', `${-overflow}px`);
+        });
+        collapsedSubtitle.title = pulseActive && pulseCopy ? pulseCopy[1] : [previewItem ? `Закреплено: ${previewTitle}${extraLabel ? `; ещё ${extraLabel.slice(1)} элементов` : ''}` : '', focusRunning ? `Таймер: ${formatFocusTime(timer.endsAt ? Math.max(0, timer.endsAt - Date.now()) : timer.remainingMs)}` : ''].filter(Boolean).join(' · ');
+        collapsedButton.title = pulseActive && pulseCopy ? pulseCopy[1] : (previewItem ? `Открыть NOVA · ${previewTitle}` : (focusRunning ? `Таймер фокуса · ${formatFocusTime(timer.endsAt - Date.now())}` : 'Нажми, чтобы открыть NOVA'));
+        collapsedButton.setAttribute('aria-label', pulseActive && pulseCopy ? `Открыть NOVA. ${pulseCopy[1]}` : (previewItem ? `Открыть NOVA. Закреплено: ${previewTitle}` : (focusRunning ? 'Открыть NOVA. Таймер фокуса запущен' : 'Открыть NOVA')));
         collapsedMediaToggle.hidden = !active;
+        collapsedMediaPrev.hidden = !active;
+        collapsedMediaNext.hidden = !active;
       }
       function renderMediaDock() {
         const active = state.activeMedia;
@@ -987,7 +1166,14 @@
         island.classList.toggle('expanded', Boolean(state.expanded));
         island.classList.toggle('drag-active', dragDepth > 0);
         homeView.classList.toggle('hidden', activeView !== 'home');
+        systemView.classList.toggle('visible', activeView === 'system');
         settingsView.classList.toggle('visible', activeView === 'settings');
+        $('.expanded-view').classList.toggle('settings-active', activeView === 'settings');
+        $$('.main-tab').forEach((button) => {
+          const active = (button.dataset.action === 'system-view' ? 'system' : 'home') === activeView;
+          button.classList.toggle('active', active);
+          if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current');
+        });
         $('#collapsedCount').textContent = String((state.items || []).length).padStart(2, '0').slice(-2);
         const clipOn = Boolean(state.settings && state.settings.clipboardEnabled);
         $('#clipboardStatus').textContent = clipOn ? 'Буфер активен' : 'Буфер на паузе';
@@ -999,6 +1185,20 @@
         const topmostOn = !state.settings || state.settings.alwaysOnTop !== false;
         $('#alwaysOnTopToggle').classList.toggle('on', topmostOn);
         $('#alwaysOnTopToggle').setAttribute('aria-checked', String(topmostOn));
+        const clickThroughOn = Boolean(state.settings && state.settings.clickThroughCollapsed);
+        $('#clickThroughToggle').classList.toggle('on', clickThroughOn);
+        $('#clickThroughToggle').setAttribute('aria-checked', String(clickThroughOn));
+        const gameModeOn = Boolean(state.settings && state.settings.gameMode);
+        $('#gameModeToggle').classList.toggle('on', gameModeOn);
+        $('#gameModeToggle').setAttribute('aria-checked', String(gameModeOn));
+        const wheelOn = !state.settings || state.settings.volumeWheelEnabled !== false;
+        $('#volumeWheelToggle').classList.toggle('on', wheelOn);
+        $('#volumeWheelToggle').setAttribute('aria-checked', String(wheelOn));
+        const micOn = Boolean(state.settings && state.settings.micMonitoringEnabled);
+        $('#micToggle').classList.toggle('on', micOn);
+        $('#micToggle').setAttribute('aria-checked', String(micOn));
+        $('#micPermissionBadge').textContent = micOn ? 'активен по разрешению' : 'выключен';
+        $('#micPermissionBadge').classList.toggle('good', micOn);
         const startupOn = Boolean(state.settings && state.settings.launchAtLogin);
         $('#startupToggle').classList.toggle('on', startupOn);
         $('#startupToggle').setAttribute('aria-checked', String(startupOn));
@@ -1015,6 +1215,7 @@
         renderItems();
         renderFocusTimer();
         renderMediaDock();
+        syncSystemPolling();
       }
 
       function showToast(message) {
@@ -1022,6 +1223,225 @@
         $('#toast').classList.add('visible');
         clearTimeout(toastTimer);
         toastTimer = setTimeout(() => $('#toast').classList.remove('visible'), 2100);
+      }
+      function setSparkline(id, values) {
+        const host = $(`#${id}`);
+        const source = Array.isArray(values) ? values : [];
+        host.innerHTML = source.map((value) => `<i style="height:${Math.max(3, Math.min(100, Math.round(Number(value) || 0)))}%"></i>`).join('');
+      }
+      function renderSystemSnapshot(snapshot) {
+        if (!snapshot || !snapshot.ok) {
+          $('#systemUpdated').textContent = 'нет данных';
+          $('#systemUpdated').className = 'system-badge warn';
+          if (snapshot && snapshot.message) $('#cpuModel').textContent = snapshot.message;
+          return;
+        }
+        const cpu = snapshot.cpuPercent != null && Number.isFinite(Number(snapshot.cpuPercent)) ? Number(snapshot.cpuPercent) : null;
+        const ram = snapshot.ramPercent != null && Number.isFinite(Number(snapshot.ramPercent)) ? Number(snapshot.ramPercent) : null;
+        $('#cpuValue').textContent = cpu === null ? '—' : `${Math.round(cpu)}%`;
+        $('#cpuBar').style.width = `${cpu === null ? 0 : Math.max(0, Math.min(100, cpu))}%`;
+        if (cpu !== null) { metricHistory.cpu.push(cpu); metricHistory.cpu.splice(0, Math.max(0, metricHistory.cpu.length - 24)); }
+        setSparkline('cpuSparkline', metricHistory.cpu);
+        $('#ramValue').textContent = ram === null ? '—' : `${Math.round(ram)}%`;
+        $('#ramBar').style.width = `${ram === null ? 0 : Math.max(0, Math.min(100, ram))}%`;
+        if (ram !== null) { metricHistory.ram.push(ram); metricHistory.ram.splice(0, Math.max(0, metricHistory.ram.length - 24)); }
+        setSparkline('ramSparkline', metricHistory.ram);
+        $('#ramNote').textContent = snapshot.ramUsedBytes && snapshot.ramTotalBytes ? `${formatBytes(snapshot.ramUsedBytes)} / ${formatBytes(snapshot.ramTotalBytes)}` : 'RAM';
+        $('#cpuModel').textContent = snapshot.cpuModel || 'Модель CPU не определена';
+        const cpuTemp = Number(snapshot.cpuTemperatureC);
+        $('#cpuTempValue').textContent = Number.isFinite(cpuTemp) && cpuTemp > 0 ? `${Math.round(cpuTemp)}°C` : '—';
+        $('#cpuTempNote').textContent = Number.isFinite(cpuTemp) && cpuTemp > 0 ? 'Показание датчика процессора' : (snapshot.platform === 'win32' ? 'Датчик недоступен или не поддерживается этим процессором.' : 'Температурные датчики недоступны в этой системе.');
+        const diskTemp = Number(snapshot.diskTemperatureC);
+        $('#diskTempValue').textContent = Number.isFinite(diskTemp) && diskTemp > 0 ? `${Math.round(diskTemp)}°C` : '—';
+        $('#diskTempNote').textContent = Number.isFinite(diskTemp) && diskTemp > 0 ? 'Максимум из доступных накопителей' : (snapshot.platform === 'win32' ? 'Не все NVMe/SATA-накопители раскрывают температуру Windows.' : 'Температура дисков не предоставлена системой.');
+        const discord = $('#discordStatus');
+        discord.textContent = snapshot.discordRunning === true ? 'запущен' : (snapshot.discordRunning === false ? 'не запущен' : 'не определён');
+        discord.className = `system-badge${snapshot.discordRunning === true ? ' good' : ''}`;
+        const stamp = new Date(snapshot.sampledAt || Date.now());
+        $('#systemUpdated').textContent = `обновлено ${stamp.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit', second:'2-digit'})}`;
+        $('#systemUpdated').className = 'system-badge good';
+      }
+      async function refreshSystemSnapshot() {
+        if (!nativeAPI || systemSnapshotPending) return;
+        systemSnapshotPending = true;
+        try { renderSystemSnapshot(await nativeAPI.getSystemSnapshot()); }
+        catch (_) { renderSystemSnapshot({ ok:false, message:'Не удалось получить метрики системы.' }); }
+        finally { systemSnapshotPending = false; }
+      }
+      async function refreshRepositoryStatus() {
+        if (!nativeAPI || repositoryRequestPending) return;
+        repositoryRequestPending = true;
+        const currentVersion = state.appVersion || '—';
+        $('#repoCurrentVersion').textContent = `Приложение ${currentVersion}`;
+        $('#repoMessage').textContent = 'Проверяю опубликованный релиз…';
+        try {
+          const result = await nativeAPI.getRepositoryStatus();
+          if (!result || !result.ok) {
+            $('#repoMessage').textContent = result && result.message ? result.message : 'GitHub сейчас недоступен.';
+            $('#repoCommit').textContent = 'Последний коммит: —';
+            $('#repoChecked').textContent = 'проверка не удалась';
+            $('#repoUpdateAction').style.display = 'none';
+            return;
+          }
+          const updateAction = $('#repoUpdateAction');
+          if (result.updateAvailable) {
+            $('#repoMessage').textContent = `Доступно обновление NOVA ${result.latestTag}`;
+            $('#repoMessage').style.color = '#ffd09c';
+            $('#repoCurrentVersion').className = 'system-badge warn';
+            updateAction.style.display = 'flex';
+          } else {
+            const latestNormalized = String(result.latestTag || '').replace(/^v/i, '');
+            $('#repoMessage').textContent = latestNormalized === currentVersion
+              ? `Установлена последняя версия · ${result.latestTag}`
+              : `Последний опубликованный релиз: ${result.latestTag || 'не найден'}`;
+            $('#repoMessage').style.color = '';
+            $('#repoCurrentVersion').className = 'system-badge';
+            updateAction.style.display = 'none';
+          }
+          const commit = result.latestCommit;
+          $('#repoCommit').textContent = commit ? `${commit.sha} · ${commit.message}` : 'Последний коммит: —';
+          $('#repoCommit').title = commit ? `${commit.sha} · ${commit.message}` : '';
+          $('#repoChecked').textContent = result.checkedAt ? `проверено ${new Date(result.checkedAt).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})}` : 'проверено';
+        } catch (_) {
+          $('#repoMessage').textContent = 'Не удалось подключиться к GitHub.';
+        } finally { repositoryRequestPending = false; }
+      }
+      async function runPingTest() {
+        if (!nativeAPI || pingRequestPending) return;
+        pingRequestPending = true;
+        const resultNode = $('#pingResult');
+        resultNode.classList.remove('good','bad');
+        resultNode.textContent = `Проверяю ${$('#pingTarget').value.trim() || 'адрес'}…`;
+        try {
+          const result = await nativeAPI.pingHost($('#pingTarget').value);
+          resultNode.textContent = result && result.host ? `${result.host} · ${result.message}` : (result && result.message ? result.message : 'Ping не выполнен.');
+          resultNode.classList.add(result && result.ok ? 'good' : 'bad');
+        } catch (_) {
+          resultNode.textContent = 'Не удалось запустить ping.';
+          resultNode.classList.add('bad');
+        } finally { pingRequestPending = false; }
+      }
+      function syncSystemPolling() {
+        if (!nativeAPI && activeView === 'system') {
+          $('#systemUpdated').textContent = 'только в приложении';
+          $('#systemUpdated').className = 'system-badge warn';
+          $('#cpuModel').textContent = 'Метрики, ping и системные команды доступны в установленной версии NOVA.';
+          $('#repoMessage').textContent = 'Открой эту вкладку в NOVA Island для проверки GitHub.';
+          $('#pingResult').textContent = 'Ping выполняется установленным приложением.';
+          $('#micStatus').textContent = 'В веб-просмотре мониторинг микрофона отключён.';
+        }
+        const shouldPoll = Boolean(nativeAPI && state && state.expanded && activeView === 'system');
+        if (shouldPoll) {
+          if (!systemRefreshTimer) {
+            refreshSystemSnapshot();
+            refreshRepositoryStatus();
+            runPingTest();
+            systemRefreshTimer = setInterval(() => { if (activeView === 'system' && state.expanded) refreshSystemSnapshot(); }, 3000);
+            pingRefreshTimer = setInterval(() => { if (activeView === 'system' && state.expanded) runPingTest(); }, 5000);
+          }
+        } else {
+          if (systemRefreshTimer) clearInterval(systemRefreshTimer);
+          if (pingRefreshTimer) clearInterval(pingRefreshTimer);
+          systemRefreshTimer = null;
+          pingRefreshTimer = null;
+        }
+      }
+      function handleClipboardPulse(event) {
+        const kind = event && ['text','link','image','file'].includes(event.kind) ? event.kind : '';
+        if (!kind || !state.settings || !state.settings.clipboardEnabled) return;
+        clipboardPulseKind = kind;
+        clipboardPulseUntil = Date.now() + 1450;
+        updateCollapsedPreview();
+        clearTimeout(clipboardPulseTimer);
+        clipboardPulseTimer = setTimeout(() => {
+          clipboardPulseKind = '';
+          clipboardPulseUntil = 0;
+          updateCollapsedPreview();
+        }, 1480);
+      }
+      async function startMicMonitoring(restoreSetting = false) {
+        if (!nativeAPI) { showToast('Мониторинг микрофона доступен в установленной версии.'); return false; }
+        if (micStream) return true;
+        try {
+          if (!restoreSetting) {
+            state = await nativeAPI.setMicMonitoring(true);
+            render();
+          }
+          if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') throw new Error('Браузер не поддерживает захват аудио.');
+          micStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) throw new Error('Web Audio недоступен.');
+          micAudioContext = new AudioContextClass();
+          await micAudioContext.resume().catch(() => {});
+          micAnalyser = micAudioContext.createAnalyser();
+          micAnalyser.fftSize = 512;
+          micSource = micAudioContext.createMediaStreamSource(micStream);
+          micSource.connect(micAnalyser);
+          micLevelBuffer = new Uint8Array(micAnalyser.fftSize);
+          $('#micStatus').textContent = 'Слушаю уровень сигнала локально · запись отключена.';
+          $('#micPermissionBadge').textContent = 'разрешён';
+          $('#micPermissionBadge').className = 'system-badge good';
+          measureMicLevel();
+          return true;
+        } catch (error) {
+          if (micStream) micStream.getTracks().forEach((track) => track.stop());
+          micStream = null;
+          if (micAudioContext && micAudioContext.state !== 'closed') micAudioContext.close().catch(() => {});
+          micAudioContext = null; micAnalyser = null; micSource = null;
+          try { state = await nativeAPI.setMicMonitoring(false); } catch (_) {}
+          render();
+          $('#micStatus').textContent = error && error.name === 'NotAllowedError' ? 'Доступ запрещён в запросе приложения или настройках приватности Windows.' : (error.message || 'Не удалось включить мониторинг микрофона.');
+          showToast('Микрофон не включён · проверь разрешение Windows');
+          return false;
+        }
+      }
+      function measureMicLevel() {
+        if (!micAnalyser || !micLevelBuffer) return;
+        micAnalyser.getByteTimeDomainData(micLevelBuffer);
+        let squareSum = 0;
+        for (const sample of micLevelBuffer) { const centered = (sample - 128) / 128; squareSum += centered * centered; }
+        const rms = Math.sqrt(squareSum / micLevelBuffer.length);
+        const level = Math.min(100, Math.max(0, Math.round(rms * 420)));
+        $('#micLevelBar').style.width = `${level}%`;
+        const speaking = level >= 8;
+        island.classList.toggle('mic-active', speaking);
+        if (speaking !== Boolean(island.dataset.micSpeaking)) {
+          island.dataset.micSpeaking = String(speaking);
+          $('#micStatus').textContent = speaking ? 'Есть входящий звук · NOVA не записывает аудио.' : 'Микрофон открыт по разрешению · сейчас тихо.';
+        }
+        micAnimationFrame = requestAnimationFrame(measureMicLevel);
+      }
+      async function stopMicMonitoring(updateSetting = true) {
+        if (micAnimationFrame) cancelAnimationFrame(micAnimationFrame);
+        micAnimationFrame = 0;
+        if (micSource) { try { micSource.disconnect(); } catch (_) {} }
+        if (micStream) micStream.getTracks().forEach((track) => track.stop());
+        micStream = null; micSource = null; micAnalyser = null; micLevelBuffer = null;
+        if (micAudioContext && micAudioContext.state !== 'closed') await micAudioContext.close().catch(() => {});
+        micAudioContext = null;
+        island.classList.remove('mic-active');
+        island.dataset.micSpeaking = 'false';
+        $('#micLevelBar').style.width = '0%';
+        $('#micStatus').textContent = 'Мониторинг выключен.';
+        if (updateSetting && nativeAPI) { state = await nativeAPI.setMicMonitoring(false); render(); }
+      }
+      async function toggleMicMonitoring() {
+        if (state.settings && state.settings.micMonitoringEnabled) {
+          await stopMicMonitoring(true);
+          $('#micPermissionBadge').textContent = 'выключен';
+          $('#micPermissionBadge').className = 'system-badge';
+          showToast('Мониторинг микрофона выключен');
+        } else {
+          const started = await startMicMonitoring(false);
+          if (started) showToast('Уровень микрофона анализируется локально');
+        }
+      }
+      async function runSystemAction(action) {
+        if (!nativeAPI) { showToast('Системные действия доступны в установленной версии.'); return; }
+        try {
+          const result = await nativeAPI.systemAction(action);
+          if (result && result.message && !result.cancelled) showToast(result.message);
+        } catch (_) { showToast('Системное действие не выполнено.'); }
       }
       async function setExpanded(value) {
         const next = Boolean(value);
@@ -1101,6 +1521,10 @@
           const result = await nativeAPI.addDroppedFiles(paths);
           if (result && result.state) state = result.state;
           render();
+          if (result && result.added) {
+            island.classList.add('drop-success');
+            setTimeout(() => island.classList.remove('drop-success'), 700);
+          }
           showToast(result && result.added ? `Добавлено файлов: ${result.added}` : 'Не удалось добавить файлы');
         } catch (_) { showToast('Не удалось добавить файлы'); }
       }
@@ -1131,22 +1555,25 @@
         const item = (state.items || []).find((candidate) => candidate.id === id && candidate.kind === 'media');
         if (!item) return;
         if (!nativeAPI || !item.mediaUrl) { showToast('Медиаплеер доступен в приложении NOVA'); return; }
-        item.pinned = true;
-        state.activeMedia = { ...item, pinned:true };
-        render();
-        let playPromise = null;
-        if (autoplay && currentMediaElement) playPromise = currentMediaElement.play();
         try {
           const result = await nativeAPI.setActiveMedia(id);
           if (result && result.state) state = result.state;
           render();
+          if (autoplay && currentMediaElement) await currentMediaElement.play();
         } catch (_) {
-          showToast('Не удалось закрепить медиафайл');
+          showToast('Не удалось открыть этот формат. Проверь кодек или доступ к файлу.');
         }
-        if (playPromise) {
-          try { await playPromise; }
-          catch (_) { showToast('Формат или кодек не поддерживается этим плеером'); }
-        }
+      }
+      function mediaQueue() {
+        return (state.items || []).filter((item) => item.kind === 'media').slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      }
+      async function stepMedia(direction) {
+        const queue = mediaQueue();
+        if (!queue.length) { showToast('В медиатеке пока нет треков'); return; }
+        const currentIndex = queue.findIndex((item) => item.id === (state.activeMedia && state.activeMedia.id));
+        const base = currentIndex < 0 ? (direction > 0 ? -1 : 0) : currentIndex;
+        const nextIndex = (base + (direction > 0 ? 1 : -1) + queue.length) % queue.length;
+        await selectMedia(queue[nextIndex].id, true);
       }
       async function closeMediaPlayer() {
         mediaAudio.pause(); mediaVideo.pause();
@@ -1224,6 +1651,27 @@
         else { state.settings.alwaysOnTop = enabled; savePreview(); }
         render();
         showToast(enabled ? 'Остров поверх окон' : 'Режим обычного окна');
+      }
+      async function toggleClickThrough() {
+        const enabled = !Boolean(state.settings && state.settings.clickThroughCollapsed);
+        if (nativeAPI) state = await nativeAPI.setClickThrough(enabled);
+        else { state.settings.clickThroughCollapsed = enabled; savePreview(); }
+        render();
+        showToast(enabled ? 'Сквозные клики включены · открой через Ctrl+Shift+Space' : 'Сквозные клики выключены');
+      }
+      async function toggleGameMode() {
+        const enabled = !Boolean(state.settings && state.settings.gameMode);
+        if (nativeAPI) state = await nativeAPI.setGameMode(enabled);
+        else { state.settings.gameMode = enabled; savePreview(); }
+        render();
+        showToast(enabled ? 'Игровой режим включён (Windows)' : 'Игровой режим выключен');
+      }
+      async function toggleVolumeWheel() {
+        const enabled = !(state.settings && state.settings.volumeWheelEnabled !== false);
+        if (nativeAPI) state = await nativeAPI.setVolumeWheel(enabled);
+        else { state.settings.volumeWheelEnabled = enabled; savePreview(); }
+        render();
+        showToast(enabled ? 'Колесо регулирует звук · Shift+колесо — яркость' : 'Системное колесо отключено');
       }
       async function cleanStorage() {
         if (!nativeAPI) { showToast('Очистка хранилища доступна в приложении'); return; }
@@ -1310,6 +1758,8 @@
             case 'expand': await setExpanded(true); break;
             case 'collapse': activeView = 'home'; closeComposer(); await setExpanded(false); break;
             case 'settings': openSettings(); break;
+            case 'home-view': activeView = 'home'; render(); break;
+            case 'system-view': activeView = 'system'; render(); break;
             case 'back-home': backHome(); break;
             case 'new-note': openComposer('note'); break;
             case 'new-text': openComposer('text'); break;
@@ -1331,10 +1781,23 @@
             case 'toggle-clipboard': await toggleClipboard(); break;
             case 'toggle-startup': await toggleStartup(); break;
             case 'toggle-topmost': await toggleAlwaysOnTop(); break;
+            case 'toggle-click-through': await toggleClickThrough(); break;
+            case 'toggle-game-mode': await toggleGameMode(); break;
+            case 'toggle-volume-wheel': await toggleVolumeWheel(); break;
+            case 'toggle-mic': await toggleMicMonitoring(); break;
+            case 'refresh-system': await Promise.all([refreshSystemSnapshot(), refreshRepositoryStatus(), runPingTest()]); break;
+            case 'ping-now': await runPingTest(); break;
+            case 'system-terminal': await runSystemAction('terminal'); break;
+            case 'system-restart-explorer': await runSystemAction('restart-explorer'); break;
+            case 'system-clean-temp': await runSystemAction('clear-user-temp'); break;
+            case 'open-github': if (nativeAPI) await nativeAPI.openRepository(); else showToast('Открой github.com/smells1k/nova-island'); break;
+            case 'open-github-release': if (nativeAPI) await nativeAPI.openLatestRelease(); else showToast('Открой раздел Releases в репозитории'); break;
             case 'clear-clipboard': await clearClipboard(); break;
             case 'clean-storage': await cleanStorage(); break;
             case 'play-media': await selectMedia(id, true); break;
             case 'media-toggle': await toggleMediaPlayback(); break;
+            case 'media-prev': await stepMedia(-1); break;
+            case 'media-next': await stepMedia(1); break;
             case 'media-back': seekMedia(-10); break;
             case 'media-forward': seekMedia(10); break;
             case 'media-mute': toggleMediaMute(); break;
@@ -1385,14 +1848,26 @@
       for (const element of [mediaAudio, mediaVideo]) {
         for (const name of ['timeupdate','durationchange','loadedmetadata','play','pause','ended','seeked','volumechange']) element.addEventListener(name, syncMediaControls);
         element.addEventListener('error', () => { if (currentMediaElement === element) showToast('Формат или кодек не поддерживается этим плеером'); });
+        element.addEventListener('ended', () => { if (currentMediaElement === element) stepMedia(1); });
       }
       mediaVideo.addEventListener('dblclick', toggleMediaPlayback);
+      $('#surface').addEventListener('wheel', async (event) => {
+        if (state.expanded || !state.settings || state.settings.volumeWheelEnabled === false || !nativeAPI || Math.abs(event.deltaY) < 1) return;
+        event.preventDefault();
+        const control = event.shiftKey ? 'brightness' : 'volume';
+        const direction = event.deltaY < 0 ? 1 : -1;
+        const steps = Math.max(1, Math.min(4, Math.round(Math.abs(event.deltaY) / 100)));
+        try {
+          const result = await nativeAPI.adjustSystemControl(control, direction * steps);
+          if (result && !result.ok) showToast(result.message || 'Системный регулятор недоступен.');
+        } catch (_) { showToast('Не удалось изменить системный регулятор.'); }
+      }, { passive:false });
       $('#fileInput').addEventListener('change', (event) => { mockAddFiles(event.target.files); event.target.value = ''; });
       modalOverlay.addEventListener('click', (event) => { if (event.target === modalOverlay) closeComposer(); });
 
       $('#surface').addEventListener('dragenter', (event) => {
         event.preventDefault(); dragDepth += 1;
-        if (!state.expanded) setExpanded(true);
+        if (!state.expanded) { activeView = 'home'; setExpanded(true); }
         island.classList.add('drag-active');
       });
       $('#surface').addEventListener('dragover', (event) => { event.preventDefault(); if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'; });
@@ -1405,7 +1880,11 @@
         const files = event.dataTransfer ? Array.from(event.dataTransfer.files || []) : [];
         if (files.length) { await addDroppedFiles(files); return; }
         const text = event.dataTransfer ? (event.dataTransfer.getData('text/plain') || event.dataTransfer.getData('text/uri-list')) : '';
-        if (text && text.trim()) await addTextItem('text', 'Перетащенный текст', text.trim(), 'drop');
+        if (text && text.trim()) {
+          await addTextItem('text', 'Перетащенный текст', text.trim(), 'drop');
+          island.classList.add('drop-success');
+          setTimeout(() => island.classList.remove('drop-success'), 700);
+        }
       });
 
       document.addEventListener('keydown', async (event) => {
@@ -1446,10 +1925,17 @@
       });
 
       if (nativeAPI) {
-        nativeAPI.getState().then((nextState) => { if (nextState) { state = nextState; render(); } }).catch(() => {});
+        nativeAPI.getState().then((nextState) => {
+          if (nextState) {
+            state = nextState;
+            render();
+            if (state.settings && state.settings.micMonitoringEnabled) startMicMonitoring(true);
+          }
+        }).catch(() => {});
         nativeAPI.onState((nextState) => { if (nextState) { state = nextState; render(); } });
         nativeAPI.onExpanded((value) => { state.expanded = Boolean(value); render(); });
         nativeAPI.onFocusTick((timer) => { state.focusTimer = timer; renderFocusTimer(); updateCollapsedPreview(); });
+        nativeAPI.onClipboardPulse(handleClipboardPulse);
         setInterval(() => {
           if (state.focusTimer && state.focusTimer.running) {
             renderFocusTimer();

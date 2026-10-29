@@ -12,6 +12,7 @@ const {
   nativeImage,
   Notification,
   screen,
+  session,
   shell,
   Tray,
 } = require('electron');
@@ -19,6 +20,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { fileURLToPath, pathToFileURL } = require('node:url');
+const systemServices = require('./system-services');
 
 const PRODUCT_NAME = 'NOVA Island';
 const STORE_VERSION = 1;
@@ -33,6 +35,10 @@ const DEFAULT_SETTINGS = {
   clipboardEnabled: true,
   launchAtLogin: false,
   alwaysOnTop: true,
+  clickThroughCollapsed: false,
+  gameMode: false,
+  micMonitoringEnabled: false,
+  volumeWheelEnabled: true,
   mediaPlayerItemId: '',
   focusTimer: {
     mode: 'focus',
@@ -54,6 +60,12 @@ let isQuitting = false;
 let clipboardTimer = null;
 let focusTimerInterval = null;
 let collapseTimer = null;
+let fullscreenTimer = null;
+let fullscreenProbeRunning = false;
+let clipboardPulseTimer = null;
+let clipboardPulseUntil = 0;
+let isGameHidden = false;
+let manuallyHidden = false;
 let lastClipboardText = '';
 let lastClipboardUriKey = '';
 let lastClipboardImageHash = '';
@@ -188,6 +200,7 @@ function publicItem(item) {
 function publicState() {
   const activeMedia = store.items.find((item) => item.id === store.settings.mediaPlayerItemId && item.kind === 'media') || null;
   return {
+    appVersion: app.getVersion(),
     items: sortedItems().map(publicItem),
     activeMedia: activeMedia ? publicItem(activeMedia) : null,
     storage: getStorageStats(),
@@ -204,13 +217,33 @@ function broadcastState() {
   refreshTrayMenu();
 }
 
+function broadcastClipboardPulse(kind) {
+  if (!store.settings.clipboardEnabled) return;
+  clipboardPulseUntil = Date.now() + 1450;
+  if (!expanded && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setBounds(makeWindowBounds(false), false);
+    applyWindowShape(false);
+  }
+  if (clipboardPulseTimer) clearTimeout(clipboardPulseTimer);
+  clipboardPulseTimer = setTimeout(() => {
+    clipboardPulseUntil = 0;
+    clipboardPulseTimer = null;
+    syncCollapsedBounds();
+  }, 1500);
+  if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()) {
+    mainWindow.webContents.send('nova:clipboard-pulse', { kind, at: Date.now() });
+  }
+}
+
 function makeWindowBounds(isExpanded) {
   const display = screen.getPrimaryDisplay();
   const area = display.workArea;
   const hasPinnedItems = store.items.some((item) => item.pinned);
   const hasActiveMedia = Boolean(store.settings.mediaPlayerItemId);
   const focusRunning = Boolean(store.settings.focusTimer && store.settings.focusTimer.running);
-  const collapsedWidth = hasPinnedItems || hasActiveMedia ? 340 : (focusRunning ? 304 : 224);
+  const baseCollapsedWidth = hasPinnedItems || hasActiveMedia ? 340 : (focusRunning ? 304 : 224);
+  const pulseWidth = clipboardPulseUntil > Date.now() ? 284 : 0;
+  const collapsedWidth = Math.max(baseCollapsedWidth, pulseWidth);
   const width = Math.min(isExpanded ? 446 : collapsedWidth, Math.max(190, area.width - 8));
   const height = isExpanded
     ? Math.max(420, Math.min(666, area.height - 18))
@@ -315,8 +348,87 @@ function tickFocusTimer() {
   }
 }
 
+function applyMousePassthrough() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const ignore = Boolean(store.settings.clickThroughCollapsed && !expanded && !isGameHidden);
+  try {
+    mainWindow.setIgnoreMouseEvents(ignore);
+  } catch (error) {
+    console.warn('[NOVA] Click-through mode is unavailable:', error.message);
+  }
+}
+
+function restoreAfterFullscreen() {
+  isGameHidden = false;
+  if (manuallyHidden || !mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.setBounds(makeWindowBounds(false), false);
+  applyWindowShape(false);
+  mainWindow.setAlwaysOnTop(Boolean(store.settings.alwaysOnTop));
+  mainWindow.showInactive();
+  if (store.settings.alwaysOnTop) mainWindow.moveTop();
+  applyMousePassthrough();
+}
+
+async function pollFullscreenApplication() {
+  if (!store.settings.gameMode || process.platform !== 'win32' || fullscreenProbeRunning || !mainWindow || mainWindow.isDestroyed()) return;
+  fullscreenProbeRunning = true;
+  try {
+    const result = await systemServices.isExternalFullscreen(screen.getAllDisplays(), process.pid);
+    if (!result.supported) return;
+    if (result.fullscreen && !isGameHidden) {
+      if (expanded) setExpanded(false, false);
+      isGameHidden = true;
+      mainWindow.hide();
+    } else if (!result.fullscreen && isGameHidden) {
+      restoreAfterFullscreen();
+    }
+  } catch (error) {
+    console.warn('[NOVA] Full-screen detection failed:', error.message);
+  } finally {
+    fullscreenProbeRunning = false;
+  }
+}
+
+function configureFullscreenWatcher() {
+  if (fullscreenTimer) {
+    clearInterval(fullscreenTimer);
+    fullscreenTimer = null;
+  }
+  if (store.settings.gameMode && process.platform === 'win32') {
+    pollFullscreenApplication();
+    fullscreenTimer = setInterval(pollFullscreenApplication, 2500);
+  } else if (isGameHidden) {
+    restoreAfterFullscreen();
+  }
+}
+
+function setClickThrough(enabled) {
+  store.settings.clickThroughCollapsed = Boolean(enabled);
+  persistStore();
+  applyMousePassthrough();
+  broadcastState();
+  return publicState();
+}
+
+function setGameMode(enabled) {
+  store.settings.gameMode = Boolean(enabled);
+  persistStore();
+  configureFullscreenWatcher();
+  broadcastState();
+  return publicState();
+}
+
+function setVolumeWheelEnabled(enabled) {
+  store.settings.volumeWheelEnabled = Boolean(enabled);
+  persistStore();
+  broadcastState();
+  return publicState();
+}
+
 function setExpanded(nextValue, shouldFocus = true) {
   const next = Boolean(nextValue);
+  if (next && store.settings.gameMode && isGameHidden) return;
+  if (next) manuallyHidden = false;
   expanded = next;
   if (!mainWindow || mainWindow.isDestroyed()) return;
 
@@ -326,6 +438,7 @@ function setExpanded(nextValue, shouldFocus = true) {
   }
 
   if (next) {
+    mainWindow.setIgnoreMouseEvents(false);
     mainWindow.setBounds(makeWindowBounds(true), false);
     applyWindowShape(true);
     if (!mainWindow.isVisible()) mainWindow.show();
@@ -336,6 +449,7 @@ function setExpanded(nextValue, shouldFocus = true) {
       mainWindow.webContents.send('nova:expanded', true);
     }
   } else {
+    mainWindow.setIgnoreMouseEvents(false);
     if (mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
       mainWindow.webContents.send('nova:expanded', false);
     }
@@ -344,6 +458,7 @@ function setExpanded(nextValue, shouldFocus = true) {
       if (!expanded && mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.setBounds(makeWindowBounds(false), false);
         applyWindowShape(false);
+        applyMousePassthrough();
       }
     }, 650);
   }
@@ -366,6 +481,18 @@ function updateTrayMenu() {
       type: 'checkbox',
       checked: Boolean(store.settings.clipboardEnabled),
       click: (menuItem) => setClipboardEnabled(menuItem.checked),
+    },
+    {
+      label: 'Сквозные клики в свёрнутом виде',
+      type: 'checkbox',
+      checked: Boolean(store.settings.clickThroughCollapsed),
+      click: (menuItem) => setClickThrough(menuItem.checked),
+    },
+    {
+      label: 'Игровой режим: скрывать в полноэкранном приложении',
+      type: 'checkbox',
+      checked: Boolean(store.settings.gameMode),
+      click: (menuItem) => setGameMode(menuItem.checked),
     },
     {
       label: 'Открыть локальное хранилище',
@@ -438,11 +565,13 @@ function createWindow() {
     mainWindow.setBounds(makeWindowBounds(false), false);
     applyWindowShape(false);
     mainWindow.show();
+    applyMousePassthrough();
   });
 
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
+      manuallyHidden = true;
       setExpanded(false);
       mainWindow.hide();
     }
@@ -724,11 +853,13 @@ async function pollClipboard() {
       return;
     }
 
+    let pulseKind = '';
     if (snapshot.uriKey && snapshot.uriKey !== lastClipboardUriKey) {
       lastClipboardUriKey = snapshot.uriKey;
       for (const filePath of snapshot.filePaths.slice(0, 30)) {
         try {
-          await importFile(filePath, 'clipboard');
+          const imported = await importFile(filePath, 'clipboard');
+          if (imported) pulseKind = 'file';
         } catch (error) {
           console.warn('[NOVA] Clipboard file could not be saved:', error.message);
         }
@@ -740,15 +871,21 @@ async function pollClipboard() {
     if (snapshot.text !== lastClipboardText) {
       lastClipboardText = snapshot.text;
       // File copies sometimes also expose their names as text; keep them as file cards instead.
-      if (!snapshot.uriKey && snapshot.text.trim()) addClipboardText(snapshot.text);
+      if (!snapshot.uriKey && snapshot.text.trim()) {
+        addClipboardText(snapshot.text);
+        pulseKind = /^https?:\/\//i.test(snapshot.text.trim()) ? 'link' : 'text';
+      }
     }
 
     if (snapshot.imageHash && snapshot.imageHash !== lastClipboardImageHash) {
       lastClipboardImageHash = snapshot.imageHash;
       await addClipboardImage(snapshot.image);
+      pulseKind = 'image';
     } else if (!snapshot.imageHash) {
       lastClipboardImageHash = '';
     }
+
+    if (pulseKind) broadcastClipboardPulse(pulseKind);
   } catch (error) {
     console.error('[NOVA] Clipboard polling failed:', error);
   } finally {
@@ -806,6 +943,7 @@ async function copyItemToClipboard(item) {
       lastClipboardImageHash = crypto.createHash('sha1').update(png).digest('hex');
       lastClipboardText = '';
       lastClipboardUriKey = '';
+      broadcastClipboardPulse('image');
       return { ok: true, message: 'Изображение скопировано' };
     }
 
@@ -815,6 +953,7 @@ async function copyItemToClipboard(item) {
       lastClipboardUriKey = path.resolve(item.storedPath);
       lastClipboardText = '';
       lastClipboardImageHash = '';
+      broadcastClipboardPulse('file');
       return { ok: true, message: 'Файл скопирован — его можно вставить в другое окно' };
     }
 
@@ -822,6 +961,7 @@ async function copyItemToClipboard(item) {
     lastClipboardText = item.content || '';
     lastClipboardUriKey = '';
     lastClipboardImageHash = '';
+    broadcastClipboardPulse(/^https?:\/\//i.test(lastClipboardText.trim()) ? 'link' : 'text');
     return { ok: true, message: 'Текст скопирован' };
   } catch (error) {
     console.error('[NOVA] Clipboard write failed:', error);
@@ -979,6 +1119,43 @@ async function importBackup() {
   }
 }
 
+async function confirmQuickAction(title, message) {
+  const options = {
+    type: 'warning',
+    title: `NOVA · ${title}`,
+    message,
+    buttons: ['Отмена', 'Продолжить'],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  };
+  const result = mainWindow && !mainWindow.isDestroyed()
+    ? await dialog.showMessageBox(mainWindow, options)
+    : await dialog.showMessageBox(options);
+  return result.response === 1;
+}
+
+async function runSystemQuickAction(action) {
+  if (action === 'terminal') return systemServices.openTerminal();
+  if (action === 'restart-explorer') {
+    if (process.platform !== 'win32') return { ok: false, message: 'Перезапуск Проводника доступен только в Windows.' };
+    const confirmed = await confirmQuickAction('Перезапустить Проводник?', 'Панель задач и окна Проводника перезапустятся. Несохранённые операции с файлами могут быть прерваны.');
+    return confirmed ? systemServices.restartExplorer() : { ok: false, cancelled: true, message: 'Действие отменено.' };
+  }
+  if (action === 'clear-user-temp') {
+    const confirmed = await confirmQuickAction('Очистить временные файлы?', 'Будут удалены только обычные файлы старше 7 дней из верхнего уровня пользовательской TEMP-папки. Системные папки и вложенные каталоги не затрагиваются.');
+    return confirmed ? systemServices.clearOldUserTempFiles() : { ok: false, cancelled: true, message: 'Действие отменено.' };
+  }
+  return { ok: false, message: 'Такого системного действия нет.' };
+}
+
+async function setMicMonitoringEnabled(enabled) {
+  store.settings.micMonitoringEnabled = Boolean(enabled);
+  persistStore();
+  broadcastState();
+  return publicState();
+}
+
 function registerIpc() {
   ipcMain.handle('nova:get-state', () => publicState());
   ipcMain.handle('nova:set-expanded', (_event, value) => {
@@ -1063,6 +1240,23 @@ function registerIpc() {
   });
   ipcMain.handle('nova:set-clipboard-enabled', (_event, enabled) => setClipboardEnabled(enabled));
   ipcMain.handle('nova:set-always-on-top', (_event, enabled) => setAlwaysOnTop(enabled));
+  ipcMain.handle('nova:set-click-through', (_event, enabled) => setClickThrough(enabled));
+  ipcMain.handle('nova:set-game-mode', (_event, enabled) => setGameMode(enabled));
+  ipcMain.handle('nova:set-volume-wheel', (_event, enabled) => setVolumeWheelEnabled(enabled));
+  ipcMain.handle('nova:set-mic-monitoring', (_event, enabled) => setMicMonitoringEnabled(enabled));
+  ipcMain.handle('nova:get-system-snapshot', async () => {
+    try { return { ...(await systemServices.getMachineSnapshot()), appVersion: app.getVersion() }; }
+    catch (error) { return { ok: false, message: error.message || 'Не удалось получить данные системы.' }; }
+  });
+  ipcMain.handle('nova:get-repository-status', () => systemServices.getRepositoryStatus(app.getVersion()));
+  ipcMain.handle('nova:ping-host', (_event, host) => systemServices.pingHost(host));
+  ipcMain.handle('nova:system-action', (_event, action) => runSystemQuickAction(action));
+  ipcMain.handle('nova:adjust-system-control', (_event, control, direction) => {
+    if (!store.settings.volumeWheelEnabled) return { ok: false, message: 'Колесо системных регуляторов отключено.' };
+    return systemServices.adjustSystemControl(control, direction);
+  });
+  ipcMain.handle('nova:open-repository', () => shell.openExternal('https://github.com/smells1k/nova-island'));
+  ipcMain.handle('nova:open-latest-release', () => shell.openExternal('https://github.com/smells1k/nova-island/releases/latest'));
   ipcMain.handle('nova:set-active-media', (_event, id) => activateMedia(id));
   ipcMain.handle('nova:close-active-media', () => closeActiveMedia());
   ipcMain.handle('nova:clean-orphaned-storage', () => cleanOrphanedFiles());
@@ -1109,9 +1303,19 @@ function registerIpc() {
 app.whenReady().then(async () => {
   ensureDirectories();
   loadStore();
+  if (process.platform === 'win32') app.setAppUserModelId('studio.nova.island');
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback, details = {}) => {
+    const requestedTypes = Array.isArray(details.mediaTypes) ? details.mediaTypes : [];
+    const audioOnlyMicPermission = permission === 'media'
+      && requestedTypes.includes('audio')
+      && !requestedTypes.includes('video')
+      && Boolean(store.settings.micMonitoringEnabled);
+    callback(audioOnlyMicPermission);
+  });
   registerIpc();
   createWindow();
   createTray();
+  configureFullscreenWatcher();
   await primeClipboardBaseline();
 
   globalShortcut.register('CommandOrControl+Shift+Space', () => {
@@ -1127,6 +1331,8 @@ app.on('before-quit', () => {
   isQuitting = true;
   if (clipboardTimer) clearInterval(clipboardTimer);
   if (focusTimerInterval) clearInterval(focusTimerInterval);
+  if (fullscreenTimer) clearInterval(fullscreenTimer);
+  if (clipboardPulseTimer) clearTimeout(clipboardPulseTimer);
   if (collapseTimer) clearTimeout(collapseTimer);
   globalShortcut.unregisterAll();
 });
