@@ -29,6 +29,19 @@
     }
     :root[data-theme="cyan"] { --violet:#77ddff; --mint:#9affdc; --peach:#b8d5ff; }
     :root[data-theme="sunset"] { --violet:#ffc08b; --mint:#ffd58b; --peach:#ff9eac; }
+    :root[data-liquid-glass="true"] .island.expanded {
+      border-color:rgba(255,255,255,.3);
+      background:linear-gradient(145deg,rgba(105,111,143,.68),rgba(24,26,39,.72) 45%,rgba(14,17,28,.8)),radial-gradient(110% 80% at 12% 0%,rgba(183,169,255,.27),transparent 62%);
+      backdrop-filter:blur(34px) saturate(1.65);
+      -webkit-backdrop-filter:blur(34px) saturate(1.65);
+      box-shadow:0 36px 110px rgba(0,0,0,.57),0 0 64px rgba(143,129,255,.2),inset 0 1px rgba(255,255,255,.26),inset 0 -1px rgba(255,255,255,.08);
+    }
+    :root[data-liquid-glass="true"] .island.expanded .hero,
+    :root[data-liquid-glass="true"] .island.expanded .focus-card,
+    :root[data-liquid-glass="true"] .island.expanded .library-categories,
+    :root[data-liquid-glass="true"] .island.expanded .item,
+    :root[data-liquid-glass="true"] .island.expanded .setting-card { backdrop-filter:blur(19px) saturate(1.35); -webkit-backdrop-filter:blur(19px) saturate(1.35); }
+    :root[data-liquid-glass="true"] .island.expanded::before { opacity:1; background:linear-gradient(125deg,rgba(255,255,255,.17),transparent 25%,transparent 68%,rgba(205,219,255,.09)); }
 
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; }
@@ -230,9 +243,28 @@
     .filter-chip { height:24px; border-radius:8px; padding:0 9px; border:1px solid transparent; background:transparent; color:#878a99; cursor:pointer; font-size:9px; white-space:nowrap; transition:all .17s ease; }
     .filter-chip:hover { color:#d9d9e4; background:rgba(255,255,255,.045); }
     .filter-chip.active { color:#ded9ff; border-color:rgba(181,168,255,.19); background:rgba(151,132,255,.12); }
+    .library-categories { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; flex:0 0 auto; margin-top:10px; padding:5px; border:1px solid rgba(255,255,255,.075); border-radius:15px; background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.022)); box-shadow:inset 0 1px rgba(255,255,255,.045),0 8px 22px rgba(0,0,0,.11); }
+    .category-tab { min-width:0; min-height:31px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:6px; padding:0 8px; border:1px solid transparent; border-radius:10px; color:#9194a3; background:transparent; font-size:9px; text-align:left; white-space:nowrap; cursor:pointer; transition:all .18s ease; }
+    .category-tab:hover { color:#ecebfa; background:rgba(255,255,255,.055); }
+    .category-tab.active { color:#f0edff; border-color:rgba(181,168,255,.25); background:linear-gradient(145deg,rgba(155,137,255,.2),rgba(116,99,201,.12)); box-shadow:inset 0 1px rgba(255,255,255,.09),0 3px 11px rgba(126,104,255,.12); }
+    .category-symbol { color:#b9b1dd; font-size:12px; line-height:1; }
+    .category-tab.active .category-symbol { color:var(--violet); }
+    .category-tab i { min-width:16px; height:16px; display:grid; place-items:center; padding:0 3px; border-radius:99px; color:#8b8f9f; background:rgba(255,255,255,.065); font-size:7px; font-style:normal; font-variant-numeric:tabular-nums; }
+    .category-tab.active i { color:#e5deff; background:rgba(181,168,255,.2); }
+    .category-subfilters { min-height:0; display:flex; flex:0 0 auto; gap:5px; margin-top:6px; overflow-x:auto; scrollbar-width:none; }
+    .category-subfilters:empty { display:none; }
+    .category-subfilters::-webkit-scrollbar { display:none; }
+    .subfilter-chip { height:23px; display:flex; align-items:center; gap:5px; padding:0 8px; border:1px solid rgba(255,255,255,.075); border-radius:8px; color:#8d91a0; background:rgba(255,255,255,.025); font-size:8px; white-space:nowrap; cursor:pointer; }
+    .subfilter-chip.active { color:#e8e3ff; border-color:rgba(181,168,255,.23); background:rgba(151,132,255,.12); }
+    .subfilter-chip i { color:#8f93a2; font-size:7px; font-style:normal; font-variant-numeric:tabular-nums; }
+    .subfilter-chip.active i { color:#c9c1e7; }
+    .category-description { min-height:14px; flex:0 0 auto; margin:5px 2px 0; color:#777b8a; font-size:8px; line-height:1.35; }
     .list-heading { display:flex; justify-content:space-between; align-items:center; flex:0 0 auto; margin:9px 2px 7px; color:#797d8c; font-size:8px; font-weight:650; letter-spacing:.15em; text-transform:uppercase; }
     .list-heading .live-status { display:flex; align-items:center; gap:5px; color:#8a8d9b; letter-spacing:.035em; font-weight:500; text-transform:none; }
     .list-heading .live-status .live-dot { width:5px; height:5px; }
+    .list-tools { display:flex; align-items:center; gap:10px; }
+    .sort-control select { max-width:112px; height:21px; padding:0 5px; border:1px solid rgba(255,255,255,.065); border-radius:7px; color:#858999; background:rgba(255,255,255,.025); font-size:7px; letter-spacing:0; text-transform:none; cursor:pointer; }
+    .sort-control option { color:#eceaf4; background:#171822; }
 
     .items-list { display:flex; flex:1; flex-direction:column; gap:7px; min-height:74px; padding:0 2px 2px 0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.13) transparent; }
     .items-list::-webkit-scrollbar { width:4px; }
@@ -389,6 +421,11 @@
     .setting-text { min-width:0; }
     .setting-title { color:#e4e4ee; font-size:10px; font-weight:600; }
     .setting-description { max-width:290px; margin-top:4px; color:#848896; font-size:9px; line-height:1.5; }
+    .rain-setting-card { border-color:rgba(119,181,255,.15); background:linear-gradient(145deg,rgba(94,150,220,.075),rgba(255,255,255,.025)); }
+    .rain-intensity-row { min-height:30px; display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:9px; padding:0 8px; border:1px solid rgba(255,255,255,.07); border-radius:9px; color:#8b91a3; background:rgba(0,0,0,.12); font-size:7px; font-weight:700; letter-spacing:.08em; }
+    .rain-intensity-row select { max-width:120px; height:26px; border:0; outline:0; color:#d9deed; background:transparent; font-size:9px; cursor:pointer; }
+    .rain-intensity-row option { color:#eceaf4; background:#171822; }
+    .rain-note { color:#777f91; }
     .toggle { width:36px; height:21px; padding:2px; flex:0 0 auto; border:1px solid rgba(255,255,255,.1); border-radius:99px; background:rgba(255,255,255,.09); cursor:pointer; transition:background .2s ease,border-color .2s ease; }
     .toggle span { display:block; width:15px; height:15px; border-radius:50%; background:#b7b9c4; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform .2s cubic-bezier(.2,.8,.2,1),background .2s ease; }
     .toggle.on { background:rgba(125,218,188,.35); border-color:rgba(140,233,202,.42); }
@@ -846,13 +883,18 @@
             </label>
           </div>
 
-          <div class="filter-row" role="tablist" aria-label="Категории коллекции">
-            <div class="filter-group" role="group" aria-label="Обзор"><span class="filter-group-label">ОБЗОР</span><button class="filter-chip active" data-filter="all" role="tab" aria-selected="true">Всё</button></div>
-            <div class="filter-group" role="group" aria-label="Содержимое"><span class="filter-group-label">СОДЕРЖИМОЕ</span><button class="filter-chip" data-filter="files" role="tab" aria-selected="false">Файлы</button><button class="filter-chip" data-filter="clipboard" role="tab" aria-selected="false">Буфер</button><button class="filter-chip" data-filter="notes" role="tab" aria-selected="false">Заметки</button><button class="filter-chip" data-filter="media" role="tab" aria-selected="false">Медиа</button></div>
-            <div class="filter-group" role="group" aria-label="Быстрый доступ"><span class="filter-group-label">БЫСТРЫЙ ДОСТУП</span><button class="filter-chip" data-filter="pinned" role="tab" aria-selected="false">Закреплённое</button></div>
+          <div class="library-categories" role="tablist" aria-label="Категории коллекции">
+            <button class="category-tab active" data-filter="all" role="tab" aria-selected="true"><span class="category-symbol">✦</span><span>Всё</span><i data-category-count="all">0</i></button>
+            <button class="category-tab" data-filter="files" role="tab" aria-selected="false"><span class="category-symbol">▤</span><span>Файлы</span><i data-category-count="files">0</i></button>
+            <button class="category-tab" data-filter="clipboard" role="tab" aria-selected="false"><span class="category-symbol">⧉</span><span>Буфер</span><i data-category-count="clipboard">0</i></button>
+            <button class="category-tab" data-filter="notes" role="tab" aria-selected="false"><span class="category-symbol">✎</span><span>Заметки</span><i data-category-count="notes">0</i></button>
+            <button class="category-tab" data-filter="media" role="tab" aria-selected="false"><span class="category-symbol">♫</span><span>Медиа</span><i data-category-count="media">0</i></button>
+            <button class="category-tab" data-filter="pinned" role="tab" aria-selected="false"><span class="category-symbol">⌑</span><span>Избранное</span><i data-category-count="pinned">0</i></button>
           </div>
+          <div id="categorySubfilters" class="category-subfilters" aria-label="Подкатегории"></div>
+          <div id="categoryDescription" class="category-description">Вся коллекция · файлы, буфер, заметки и медиа в одном месте</div>
 
-          <div class="list-heading"><span id="listHeading">ПОСЛЕДНЕЕ</span><span class="live-status"><i class="live-dot"></i><span id="clipboardStatus">Буфер активен</span></span></div>
+          <div class="list-heading"><span id="listHeading">ПОСЛЕДНЕЕ</span><span class="list-tools"><label class="sort-control" aria-label="Порядок элементов"><select id="itemSort" aria-label="Сортировка"><option value="recent">Сначала новые</option><option value="name">По имени</option><option value="size">По размеру</option></select></label><span class="live-status"><i class="live-dot"></i><span id="clipboardStatus">Буфер активен</span></span></span></div>
           <div id="itemsList" class="items-list" aria-live="polite"></div>
         </section>
 
@@ -962,6 +1004,20 @@
                 <button class="theme-choice" data-theme-choice="cyan" role="radio" aria-checked="false"><i class="theme-dot theme-cyan"></i><span>Океан</span></button>
                 <button class="theme-choice" data-theme-choice="sunset" role="radio" aria-checked="false"><i class="theme-dot theme-sunset"></i><span>Закат</span></button>
               </div>
+            </div>
+            <div class="setting-card">
+              <div class="setting-row">
+                <div class="setting-text"><div class="setting-title">Liquid Glass · стиль iOS</div><div class="setting-description">Полупрозрачное матовое стекло, глубина, блики и насыщенное размытие. Эффект применяется к панели и карточкам.</div></div>
+                <button class="toggle" id="liquidGlassToggle" data-action="toggle-liquid-glass" role="switch" aria-label="Liquid Glass" aria-checked="false"><span></span></button>
+              </div>
+            </div>
+            <div class="setting-card rain-setting-card">
+              <div class="setting-row">
+                <div class="setting-text"><div class="setting-title">Дождь на рабочем столе</div><div class="setting-description">Прозрачный сквозной слой поверх окон и меню Пуск: капли падают, собираются, скользят по стеклу и дают круги от ударов. Мышь проходит насквозь.</div></div>
+                <button class="toggle" id="rainToggle" data-action="toggle-rain" role="switch" aria-label="Дождь на рабочем столе" aria-checked="false"><span></span></button>
+              </div>
+              <label class="rain-intensity-row" for="rainIntensity"><span>СИЛА ДОЖДЯ</span><select id="rainIntensity" aria-label="Интенсивность дождя"><option value="light">Лёгкий</option><option value="normal">Средний</option><option value="storm">Ливень</option></select></label>
+              <div class="setting-description rain-note">Эффект рисуется поверх рабочего стола и может быть скрыт игровым режимом при полноэкранном приложении.</div>
             </div>
             <div class="setting-card">
               <div class="setting-title">Резервная копия</div>
@@ -1100,6 +1156,13 @@
       const nativeAPI = window.novaAPI || null;
       const previewKey = 'nova-island-preview-v1';
       let activeFilter = 'all';
+      let activeSubfilter = 'all';
+      let itemSort = 'recent';
+      try {
+        const savedSort = localStorage.getItem('nova-island-sort-v1');
+        if (['recent','name','size'].includes(savedSort)) itemSort = savedSort;
+      } catch (_) {}
+      $('#itemSort').value = itemSort;
       let activeTaskFilter = 'today';
       let activeView = 'home';
       let composerKind = 'note';
@@ -1139,7 +1202,7 @@
           { id:'demo-task-2', title:'Сделать короткую паузу', dueDate:localDayKey(), completed:true, createdAt:demoDate(110), completedAt:demoDate(12) },
           { id:'demo-task-3', title:'Отправить черновик', dueDate:demoTomorrow, completed:false, createdAt:demoDate(18), completedAt:'' }
         ],
-        settings: { clipboardEnabled:true, launchAtLogin:false, alwaysOnTop:true, clickThroughCollapsed:false, gameMode:false, micMonitoringEnabled:false, volumeWheelEnabled:true },
+          settings: { clipboardEnabled:true, launchAtLogin:false, alwaysOnTop:true, clickThroughCollapsed:false, gameMode:false, micMonitoringEnabled:false, volumeWheelEnabled:true, liquidGlassEnabled:false, rainEnabled:false, rainIntensity:'normal' },
         expanded:true
       };
 
@@ -1150,7 +1213,7 @@
         } catch (_) {}
         return JSON.parse(JSON.stringify(demoSeed));
       }
-      state = nativeAPI ? { items:[], tasks:[], settings:{clipboardEnabled:true,launchAtLogin:false,alwaysOnTop:true,clickThroughCollapsed:false,gameMode:false,micMonitoringEnabled:false,volumeWheelEnabled:true}, activeMedia:null, storage:{fileCount:0,totalBytes:0,orphanedFiles:0}, focusTimer:{ ...defaultFocusTimer }, expanded:false } : loadPreviewState();
+      state = nativeAPI ? { items:[], tasks:[], settings:{clipboardEnabled:true,launchAtLogin:false,alwaysOnTop:true,clickThroughCollapsed:false,gameMode:false,micMonitoringEnabled:false,volumeWheelEnabled:true,liquidGlassEnabled:false,rainEnabled:false,rainIntensity:'normal'}, activeMedia:null, storage:{fileCount:0,totalBytes:0,orphanedFiles:0}, focusTimer:{ ...defaultFocusTimer }, expanded:false } : loadPreviewState();
       const themeKey = 'nova-island-theme-v1';
       let currentTheme = 'violet';
       try {
@@ -1279,12 +1342,52 @@
         if (item.kind === 'note') return icon('note', 17);
         return icon('text', 17);
       }
+      function categoryItems(filter) {
+        const items = state && Array.isArray(state.items) ? state.items : [];
+        if (filter === 'files') return items.filter((item) => item.kind === 'file' || item.kind === 'image');
+        if (filter === 'clipboard') return items.filter((item) => item.source === 'clipboard');
+        if (filter === 'notes') return items.filter((item) => item.kind === 'note');
+        if (filter === 'media') return items.filter((item) => item.kind === 'media');
+        if (filter === 'pinned') return items.filter((item) => Boolean(item.pinned));
+        return items;
+      }
+      function renderCategoryControls() {
+        const labels = {
+          all: 'Вся коллекция · файлы, буфер, заметки и медиа в одном месте',
+          files: 'Файлы · документы и изображения, добавленные в NOVA',
+          clipboard: 'Буфер · только скопированное, отдельно от ручных заметок и файлов',
+          notes: 'Заметки · мысли, ссылки и текст, сохранённые вручную',
+          media: 'Медиа · аудио и видео с быстрым встроенным проигрывателем',
+          pinned: 'Избранное · всё, что закреплено булавкой',
+        };
+        $$('.category-tab').forEach((button) => {
+          const filter = button.dataset.filter;
+          const active = filter === activeFilter;
+          button.classList.toggle('active', active);
+          button.setAttribute('aria-selected', String(active));
+          const count = button.querySelector('[data-category-count]');
+          if (count) count.textContent = String(categoryItems(filter).length);
+        });
+        $('#categoryDescription').textContent = labels[activeFilter] || labels.all;
+        const subfilterHost = $('#categorySubfilters');
+        let choices = [];
+        if (activeFilter === 'files') choices = [['all','Все файлы'],['file','Документы'],['image','Изображения']];
+        if (activeFilter === 'clipboard') choices = [['all','Всё скопированное'],['text','Текст'],['image','Изображения'],['file','Файлы']];
+        if (!choices.length) { subfilterHost.innerHTML = ''; activeSubfilter = 'all'; return; }
+        const source = categoryItems(activeFilter);
+        subfilterHost.innerHTML = choices.map(([value,label]) => {
+          const count = value === 'all' ? source.length : source.filter((item) => item.kind === value).length;
+          return `<button class="subfilter-chip${activeSubfilter === value ? ' active' : ''}" data-subfilter="${value}" aria-pressed="${activeSubfilter === value}">${label}<i>${count}</i></button>`;
+        }).join('');
+      }
       function matchesFilter(item) {
-        if (activeFilter === 'files') return item.kind === 'file' || item.kind === 'image';
-        if (activeFilter === 'media') return item.kind === 'media';
-        if (activeFilter === 'pinned') return Boolean(item.pinned);
-        if (activeFilter === 'clipboard') return item.source === 'clipboard';
-        if (activeFilter === 'notes') return item.kind === 'note';
+        if (activeFilter === 'files' && !(item.kind === 'file' || item.kind === 'image')) return false;
+        if (activeFilter === 'media' && item.kind !== 'media') return false;
+        if (activeFilter === 'pinned' && !item.pinned) return false;
+        if (activeFilter === 'clipboard' && item.source !== 'clipboard') return false;
+        if (activeFilter === 'notes' && item.kind !== 'note') return false;
+        if (activeFilter === 'files' && activeSubfilter !== 'all' && item.kind !== activeSubfilter) return false;
+        if (activeFilter === 'clipboard' && activeSubfilter !== 'all' && item.kind !== activeSubfilter) return false;
         return true;
       }
 
@@ -1316,12 +1419,15 @@
       }
 
       function renderItems() {
+        renderCategoryControls();
         const query = (searchInput.value || '').trim().toLocaleLowerCase('ru-RU');
         const filtered = (state.items || []).filter((item) => {
           if (!matchesFilter(item)) return false;
           if (!query) return true;
           return `${item.title || ''} ${item.content || ''} ${item.extension || ''}`.toLocaleLowerCase('ru-RU').includes(query);
         });
+        if (itemSort === 'name') filtered.sort((a,b) => String(a.title || '').localeCompare(String(b.title || ''), 'ru-RU', { sensitivity:'base' }));
+        else if (itemSort === 'size') filtered.sort((a,b) => (Number(b.size) || 0) - (Number(a.size) || 0));
         const headings = { all:'ПОСЛЕДНЕЕ', files:'ФАЙЛЫ', clipboard:'БУФЕР', notes:'ЗАМЕТКИ', pinned:'ЗАКРЕПЛЁННОЕ', media:'МЕДИА' };
         $('#listHeading').textContent = query ? 'РЕЗУЛЬТАТЫ ПОИСКА' : (headings[activeFilter] || 'ПОДБОРКА');
         if (!filtered.length) {
@@ -1613,6 +1719,14 @@
         const wheelOn = !state.settings || state.settings.volumeWheelEnabled !== false;
         $('#volumeWheelToggle').classList.toggle('on', wheelOn);
         $('#volumeWheelToggle').setAttribute('aria-checked', String(wheelOn));
+        const glassOn = Boolean(state.settings && state.settings.liquidGlassEnabled);
+        document.documentElement.dataset.liquidGlass = String(glassOn);
+        $('#liquidGlassToggle').classList.toggle('on', glassOn);
+        $('#liquidGlassToggle').setAttribute('aria-checked', String(glassOn));
+        const rainOn = Boolean(state.settings && state.settings.rainEnabled);
+        $('#rainToggle').classList.toggle('on', rainOn);
+        $('#rainToggle').setAttribute('aria-checked', String(rainOn));
+        $('#rainIntensity').value = ['light','normal','storm'].includes(state.settings && state.settings.rainIntensity) ? state.settings.rainIntensity : 'normal';
         const micOn = Boolean(state.settings && state.settings.micMonitoringEnabled);
         $('#micToggle').classList.toggle('on', micOn);
         $('#micToggle').setAttribute('aria-checked', String(micOn));
@@ -2167,6 +2281,23 @@
         render();
         showToast(enabled ? 'Колесо регулирует звук · Shift+колесо — яркость' : 'Системное колесо отключено');
       }
+      async function setVisualEffects(values) {
+        state.settings = state.settings || {};
+        Object.assign(state.settings, values);
+        if (nativeAPI) state = await nativeAPI.setVisualEffects(values);
+        else savePreview();
+        render();
+      }
+      async function toggleLiquidGlass() {
+        const enabled = !Boolean(state.settings && state.settings.liquidGlassEnabled);
+        await setVisualEffects({ liquidGlassEnabled:enabled });
+        showToast(enabled ? 'Liquid Glass включён' : 'Обычное стекло включено');
+      }
+      async function toggleRain() {
+        const enabled = !Boolean(state.settings && state.settings.rainEnabled);
+        await setVisualEffects({ rainEnabled:enabled });
+        showToast(enabled ? 'Дождь включён · поверх окон · клики проходят насквозь' : 'Дождь на рабочем столе выключен');
+      }
       async function cleanStorage() {
         if (!nativeAPI) { showToast('Очистка хранилища доступна в приложении'); return; }
         const orphanCount = Number(state.storage && state.storage.orphanedFiles) || 0;
@@ -2282,6 +2413,8 @@
             case 'toggle-click-through': await toggleClickThrough(); break;
             case 'toggle-game-mode': await toggleGameMode(); break;
             case 'toggle-volume-wheel': await toggleVolumeWheel(); break;
+            case 'toggle-liquid-glass': await toggleLiquidGlass(); break;
+            case 'toggle-rain': await toggleRain(); break;
             case 'toggle-mic': await toggleMicMonitoring(); break;
             case 'refresh-system': await Promise.all([refreshSystemSnapshot(), refreshRepositoryStatus(), runPingTest()]); break;
             case 'ping-now': await runPingTest(); break;
@@ -2320,7 +2453,14 @@
         const filterButton = event.target.closest('[data-filter]');
         if (filterButton) {
           activeFilter = filterButton.dataset.filter;
+          activeSubfilter = 'all';
           render();
+          return;
+        }
+        const subfilterButton = event.target.closest('[data-subfilter]');
+        if (subfilterButton) {
+          activeSubfilter = subfilterButton.dataset.subfilter;
+          renderItems();
           return;
         }
         const taskFilterButton = event.target.closest('[data-task-filter]');
@@ -2338,6 +2478,16 @@
         if (card && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); await openItem(card.dataset.id); }
       });
       searchInput.addEventListener('input', renderItems);
+      $('#itemSort').addEventListener('change', (event) => {
+        itemSort = ['recent','name','size'].includes(event.target.value) ? event.target.value : 'recent';
+        try { localStorage.setItem('nova-island-sort-v1', itemSort); } catch (_) {}
+        renderItems();
+      });
+      $('#rainIntensity').addEventListener('change', async (event) => {
+        const intensity = ['light','normal','storm'].includes(event.target.value) ? event.target.value : 'normal';
+        await setVisualEffects({ rainIntensity:intensity });
+        showToast(`Дождь: ${{light:'лёгкий',normal:'средний',storm:'ливень'}[intensity]}`);
+      });
       taskForm.addEventListener('submit', async (event) => { event.preventDefault(); await addTaskFromForm(); });
       mediaSeek.addEventListener('input', () => {
         if (!currentMediaElement || !Number.isFinite(currentMediaElement.duration)) return;
@@ -2410,8 +2560,9 @@
             return;
           }
           if (!editing && /^[1-6]$/.test(key)) {
-            const filters = ['all','files','clipboard','notes','pinned','media'];
+            const filters = ['all','files','clipboard','notes','media','pinned'];
             activeFilter = filters[Number(key) - 1];
+            activeSubfilter = 'all';
             render();
             return;
           }

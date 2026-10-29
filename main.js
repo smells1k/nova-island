@@ -41,6 +41,9 @@ const DEFAULT_SETTINGS = {
   gameMode: false,
   micMonitoringEnabled: false,
   volumeWheelEnabled: true,
+  liquidGlassEnabled: false,
+  rainEnabled: false,
+  rainIntensity: 'normal',
   mediaPlayerItemId: '',
   focusTimer: {
     mode: 'focus',
@@ -55,6 +58,7 @@ const DEFAULT_SETTINGS = {
 };
 
 let mainWindow = null;
+let rainWindow = null;
 let tray = null;
 let storePath = '';
 let libraryPath = '';
@@ -132,6 +136,9 @@ function loadStore() {
     ...(saved && saved.settings && typeof saved.settings === 'object' ? saved.settings : {}),
   };
   settings.focusTimer = normalizeFocusTimer(settings.focusTimer);
+  settings.liquidGlassEnabled = Boolean(settings.liquidGlassEnabled);
+  settings.rainEnabled = Boolean(settings.rainEnabled);
+  settings.rainIntensity = ['light', 'normal', 'storm'].includes(settings.rainIntensity) ? settings.rainIntensity : 'normal';
   const items = Array.isArray(saved && saved.items) ? saved.items : [];
   store = {
     version: STORE_VERSION,
@@ -386,6 +393,7 @@ function applyMousePassthrough() {
 
 function restoreAfterFullscreen() {
   isGameHidden = false;
+  if (rainWindow && !rainWindow.isDestroyed() && store.settings.rainEnabled) rainWindow.showInactive();
   if (manuallyHidden || !mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.setBounds(makeWindowBounds(false), false);
   applyWindowShape(false);
@@ -405,6 +413,7 @@ async function pollFullscreenApplication() {
       if (expanded) setExpanded(false, false);
       isGameHidden = true;
       mainWindow.hide();
+      if (rainWindow && !rainWindow.isDestroyed()) rainWindow.hide();
     } else if (!result.fullscreen && isGameHidden) {
       restoreAfterFullscreen();
     }
@@ -550,6 +559,48 @@ function createTray() {
   } catch (error) {
     console.error('[NOVA] Tray icon could not be created:', error);
   }
+}
+
+function syncRainOverlay() {
+  const enabled = Boolean(store.settings.rainEnabled);
+  if (!enabled) {
+    if (rainWindow && !rainWindow.isDestroyed()) rainWindow.destroy();
+    rainWindow = null;
+    return;
+  }
+  if (rainWindow && !rainWindow.isDestroyed()) {
+    const bounds = screen.getAllDisplays().reduce((rect, display) => ({
+      x: Math.min(rect.x, display.bounds.x), y: Math.min(rect.y, display.bounds.y),
+      right: Math.max(rect.right, display.bounds.x + display.bounds.width),
+      bottom: Math.max(rect.bottom, display.bounds.y + display.bounds.height),
+    }), { x: 0, y: 0, right: 0, bottom: 0 });
+    rainWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.right - bounds.x, height: bounds.bottom - bounds.y }, false);
+    rainWindow.webContents.send('nova:rain-intensity', store.settings.rainIntensity);
+    if (!isGameHidden && !rainWindow.isVisible()) rainWindow.showInactive();
+    return;
+  }
+  const displays = screen.getAllDisplays();
+  const left = Math.min(...displays.map((display) => display.bounds.x));
+  const top = Math.min(...displays.map((display) => display.bounds.y));
+  const right = Math.max(...displays.map((display) => display.bounds.x + display.bounds.width));
+  const bottom = Math.max(...displays.map((display) => display.bounds.y + display.bounds.height));
+  rainWindow = new BrowserWindow({
+    x: left, y: top, width: right - left, height: bottom - top,
+    title: 'NOVA Rain', frame: false, transparent: true, backgroundColor: '#00000000',
+    hasShadow: false, resizable: false, movable: false, minimizable: false,
+    maximizable: false, fullscreenable: false, focusable: false, skipTaskbar: true,
+    show: false, alwaysOnTop: true,
+    webPreferences: { preload: path.join(__dirname, 'rain-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false },
+  });
+  rainWindow.setMenu(null);
+  rainWindow.setAlwaysOnTop(true, process.platform === 'win32' ? 'screen-saver' : 'floating');
+  rainWindow.setIgnoreMouseEvents(true);
+  try { rainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch { /* Not supported on every platform. */ }
+  rainWindow.loadFile(path.join(__dirname, 'rain.html'), { query: { intensity: store.settings.rainIntensity } });
+  rainWindow.once('ready-to-show', () => {
+    if (rainWindow && !rainWindow.isDestroyed() && !isGameHidden) rainWindow.showInactive();
+  });
+  rainWindow.on('closed', () => { rainWindow = null; });
 }
 
 function createWindow() {
@@ -1232,6 +1283,23 @@ async function setMicMonitoringEnabled(enabled) {
   return publicState();
 }
 
+function setVisualEffects(values = {}) {
+  if (Object.prototype.hasOwnProperty.call(values, 'liquidGlassEnabled')) {
+    store.settings.liquidGlassEnabled = Boolean(values.liquidGlassEnabled);
+  }
+  if (Object.prototype.hasOwnProperty.call(values, 'rainEnabled')) {
+    store.settings.rainEnabled = Boolean(values.rainEnabled);
+  }
+  if (Object.prototype.hasOwnProperty.call(values, 'rainIntensity')) {
+    const intensity = String(values.rainIntensity);
+    if (['light', 'normal', 'storm'].includes(intensity)) store.settings.rainIntensity = intensity;
+  }
+  persistStore();
+  syncRainOverlay();
+  broadcastState();
+  return publicState();
+}
+
 function registerIpc() {
   ipcMain.handle('nova:get-state', () => publicState());
   ipcMain.handle('nova:set-expanded', (_event, value) => {
@@ -1323,6 +1391,7 @@ function registerIpc() {
   ipcMain.handle('nova:set-game-mode', (_event, enabled) => setGameMode(enabled));
   ipcMain.handle('nova:set-volume-wheel', (_event, enabled) => setVolumeWheelEnabled(enabled));
   ipcMain.handle('nova:set-mic-monitoring', (_event, enabled) => setMicMonitoringEnabled(enabled));
+  ipcMain.handle('nova:set-visual-effects', (_event, values) => setVisualEffects(values));
   ipcMain.handle('nova:get-system-snapshot', async () => {
     try { return { ...(await systemServices.getMachineSnapshot()), appVersion: app.getVersion() }; }
     catch (error) { return { ok: false, message: error.message || 'Не удалось получить данные системы.' }; }
@@ -1394,6 +1463,10 @@ app.whenReady().then(async () => {
   registerIpc();
   createWindow();
   createTray();
+  syncRainOverlay();
+  screen.on('display-added', syncRainOverlay);
+  screen.on('display-removed', syncRainOverlay);
+  screen.on('display-metrics-changed', syncRainOverlay);
   configureFullscreenWatcher();
   await primeClipboardBaseline();
 
@@ -1408,6 +1481,8 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  if (rainWindow && !rainWindow.isDestroyed()) rainWindow.destroy();
+  rainWindow = null;
   if (clipboardTimer) clearInterval(clipboardTimer);
   if (focusTimerInterval) clearInterval(focusTimerInterval);
   if (fullscreenTimer) clearInterval(fullscreenTimer);

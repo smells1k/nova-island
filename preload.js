@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('novaAPI', Object.freeze({
   setGameMode: (enabled) => ipcRenderer.invoke('nova:set-game-mode', Boolean(enabled)),
   setVolumeWheel: (enabled) => ipcRenderer.invoke('nova:set-volume-wheel', Boolean(enabled)),
   setMicMonitoring: (enabled) => ipcRenderer.invoke('nova:set-mic-monitoring', Boolean(enabled)),
+  setVisualEffects: (values) => ipcRenderer.invoke('nova:set-visual-effects', values && typeof values === 'object' ? values : {}),
   getSystemSnapshot: () => ipcRenderer.invoke('nova:get-system-snapshot'),
   getRepositoryStatus: () => ipcRenderer.invoke('nova:get-repository-status'),
   pingHost: (host) => ipcRenderer.invoke('nova:ping-host', String(host || '').slice(0, 253)),

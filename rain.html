@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'none'; object-src 'none';">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NOVA Rain</title>
+  <style>
+    html, body, canvas { width:100%; height:100%; margin:0; padding:0; overflow:hidden; background:transparent; }
+    body { pointer-events:none; }
+    canvas { display:block; }
+  </style>
+</head>
+<body>
+<canvas id="rain"></canvas>
+<script>
+(() => {
+  'use strict';
+  const canvas = document.getElementById('rain');
+  const ctx = canvas.getContext('2d', { alpha:true });
+  const presets = { light:{ streaks:190, drops:35, speed:.74 }, normal:{ streaks:390, drops:80, speed:1 }, storm:{ streaks:740, drops:145, speed:1.33 } };
+  let intensity = new URLSearchParams(location.search).get('intensity') || 'normal';
+  let preset = presets[intensity] || presets.normal;
+  let width = 1, height = 1, ratio = 1, last = performance.now(), frame = 0;
+  let streaks = [], beads = [], splashes = [];
+  const rand = (min,max) => min + Math.random() * (max-min);
+  function resize() {
+    ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+    width = Math.max(1, window.innerWidth); height = Math.max(1, window.innerHeight);
+    canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
+    ctx.setTransform(ratio,0,0,ratio,0,0);
+    const count = Math.round(preset.streaks * Math.max(.45, Math.min(2.2, width * height / 1400000)));
+    streaks = Array.from({length:count}, () => makeStreak(true));
+    beads = Array.from({length:preset.drops}, () => makeBead(true));
+  }
+  function makeStreak(initial=false) {
+    return { x:rand(-25,width+25), y:initial ? rand(-height,height) : rand(-120,-8), len:rand(11,34), v:rand(330,900)*preset.speed, alpha:rand(.08,.29), sway:rand(-13,13) };
+  }
+  function makeBead(initial=false) {
+    return { x:rand(0,width), y:initial ? rand(0,height) : rand(-40,-8), r:rand(1.1,3.5), vx:rand(-9,9), vy:rand(9,24)*preset.speed, alpha:rand(.16,.49), phase:rand(0,Math.PI*2) };
+  }
+  function addSplash(x,y,scale=1) {
+    splashes.push({ x,y,r:rand(1.2,3.2)*scale, age:0, life:rand(.34,.65), alpha:rand(.12,.26) });
+    if (splashes.length > 90) splashes.shift();
+  }
+  function setIntensity(value) {
+    if (!presets[value] || value === intensity) return;
+    intensity=value; preset=presets[value]; resize();
+  }
+  if (window.rainAPI) window.rainAPI.onIntensity(setIntensity);
+  window.addEventListener('resize', resize, { passive:true });
+  function tick(now) {
+    const dt=Math.min(.04,Math.max(.001,(now-last)/1000)); last=now;
+    ctx.clearRect(0,0,width,height);
+    const wind=Math.sin(now/4700)*23;
+    for (const s of streaks) {
+      s.x += (wind+s.sway)*dt; s.y += s.v*dt;
+      if (s.y > height+15 || s.x < -50 || s.x > width+50) {
+        if (s.y > height-3) addSplash(Math.max(0,Math.min(width,s.x)),height-3,.7);
+        Object.assign(s,makeStreak(false));
+      }
+      ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(s.x-wind*.015,s.y-s.len);
+      ctx.strokeStyle=`rgba(201,224,255,${s.alpha})`; ctx.lineWidth=.75; ctx.stroke();
+    }
+    for (let i=0;i<beads.length;i++) {
+      const b=beads[i]; b.phase+=dt*1.4; b.vy+=dt*5.5*preset.speed;
+      b.x+=(b.vx+wind*.09+Math.sin(b.phase)*2.5)*dt; b.y+=b.vy*dt;
+      if (b.y > height-7) { addSplash(b.x,height-5,b.r*.34); Object.assign(b,makeBead(false)); }
+      if (b.x < 0 || b.x > width) b.vx *= -1;
+      for (let j=i+1;j<beads.length;j++) {
+        const other=beads[j], dx=other.x-b.x, dy=other.y-b.y, distance=Math.hypot(dx,dy);
+        if (distance < (b.r+other.r)*.72 && b.r < 7) {
+          b.r=Math.min(7,Math.sqrt(b.r*b.r+other.r*other.r)); b.vy=Math.max(b.vy,other.vy);
+          other.r=0; other.y=-100;
+        }
+      }
+      if (b.r < .5) continue;
+      const grad=ctx.createRadialGradient(b.x-b.r*.35,b.y-b.r*.45,.2,b.x,b.y,b.r*1.8);
+      grad.addColorStop(0,`rgba(239,249,255,${b.alpha*.9})`); grad.addColorStop(.28,`rgba(160,197,237,${b.alpha*.48})`); grad.addColorStop(1,'rgba(119,163,211,0)');
+      ctx.beginPath(); ctx.ellipse(b.x,b.y,b.r*.82,b.r*1.45,-.12,0,Math.PI*2); ctx.fillStyle=grad; ctx.fill();
+      ctx.beginPath(); ctx.arc(b.x-b.r*.24,b.y-b.r*.55,Math.max(.35,b.r*.16),0,Math.PI*2); ctx.fillStyle=`rgba(255,255,255,${b.alpha*.74})`; ctx.fill();
+    }
+    beads=beads.filter((b)=>b.r>=.5);
+    while(beads.length<preset.drops) beads.push(makeBead(false));
+    for (let i=splashes.length-1;i>=0;i--) {
+      const p=splashes[i]; p.age+=dt; const t=p.age/p.life;
+      if(t>=1){splashes.splice(i,1);continue;}
+      ctx.beginPath(); ctx.ellipse(p.x,p.y, p.r*(1+t*3.4), Math.max(.3,p.r*.22*(1-t)),0,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(192,220,255,${p.alpha*(1-t)})`; ctx.lineWidth=.7; ctx.stroke();
+    }
+    // A faint pooled-water meniscus catches raindrops along the bottom edge.
+    ctx.beginPath(); ctx.moveTo(0,height-1);
+    for(let x=0;x<=width;x+=22) ctx.lineTo(x,height-1-Math.sin(x*.018+now/620)*.65);
+    ctx.strokeStyle='rgba(183,216,255,.16)'; ctx.lineWidth=1.1; ctx.stroke();
+    frame=requestAnimationFrame(tick);
+  }
+  resize(); frame=requestAnimationFrame(tick);
+  window.addEventListener('pagehide',()=>cancelAnimationFrame(frame),{once:true});
+})();
+</script>
+</body>
+</html>
