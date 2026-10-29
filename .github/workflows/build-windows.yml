@@ -37,7 +37,7 @@ jobs:
       - name: Build NSIS installer
         shell: pwsh
         run: |
-          npm run dist:win 2>&1 | Tee-Object -FilePath build.log
+          npm run dist:win -- --publish never 2>&1 | Tee-Object -FilePath build.log
           $exitCode = $LASTEXITCODE
           if ($exitCode -ne 0) {
             $details = (Get-Content build.log -Tail 25) -join ' | '
