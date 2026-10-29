@@ -35,7 +35,15 @@ jobs:
       - name: Run tests
         run: npm test
       - name: Build NSIS installer
-        run: npm run dist:win
+        shell: pwsh
+        run: |
+          npm run dist:win 2>&1 | Tee-Object -FilePath build.log
+          $exitCode = $LASTEXITCODE
+          if ($exitCode -ne 0) {
+            $details = (Get-Content build.log -Tail 25) -join ' | '
+            Write-Host "::error title=Windows packaging failed::$details"
+          }
+          exit $exitCode
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
