@@ -1,0 +1,64 @@
+{
+  "name": "nova-island",
+  "version": "1.0.0",
+  "description": "A polished, always-on-top desktop island for files, notes and clipboard history.",
+  "main": "main.js",
+  "author": "NOVA",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis --x64",
+    "dist:win:portable": "electron-builder --win portable --x64",
+    "pack:win": "electron-builder --win dir --x64"
+  },
+  "devDependencies": {
+    "electron": "^45.1.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "studio.nova.island",
+    "productName": "NOVA Island",
+    "asar": true,
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "assets/**/*",
+      "package.json"
+    ],
+    "artifactName": "NOVA-Island-Setup-${version}-${arch}.${ext}",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/app.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NOVA Island",
+      "language": "1049",
+      "include": "installer.nsh",
+      "installerSidebar": "installer-sidebar.bmp",
+      "installerLanguages": ["ru_RU"],
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
+    }
+  }
+}

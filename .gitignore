@@ -1,0 +1,12 @@
+node_modules/
+release/
+dist/
+out/
+*.log
+.DS_Store
+
+# Local smoke-test screenshots
+/smoke.png
+/note-test.png
+/expanded-smoke.png
+/installer-*.png
