@@ -58,7 +58,7 @@ const DEFAULT_SETTINGS = {
 };
 
 let mainWindow = null;
-let rainWindow = null;
+let rainWindows = new Map();
 let tray = null;
 let storePath = '';
 let libraryPath = '';
@@ -395,7 +395,9 @@ function applyMousePassthrough() {
 
 function restoreAfterFullscreen() {
   isGameHidden = false;
-  if (rainWindow && !rainWindow.isDestroyed() && store.settings.rainEnabled) rainWindow.showInactive();
+  if (store.settings.rainEnabled) {
+    for (const overlay of rainWindows.values()) if (!overlay.isDestroyed()) overlay.showInactive();
+  }
   if (manuallyHidden || !mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.setBounds(makeWindowBounds(false), false);
   applyWindowShape(false);
@@ -415,7 +417,7 @@ async function pollFullscreenApplication() {
       if (expanded) setExpanded(false, false);
       isGameHidden = true;
       mainWindow.hide();
-      if (rainWindow && !rainWindow.isDestroyed()) rainWindow.hide();
+      for (const overlay of rainWindows.values()) if (!overlay.isDestroyed()) overlay.hide();
     } else if (!result.fullscreen && isGameHidden) {
       restoreAfterFullscreen();
     }
@@ -564,7 +566,7 @@ function createTray() {
 }
 
 async function updateRainWindowSurfaces() {
-  if (process.platform !== 'win32' || !store.settings.rainEnabled || rainSurfaceProbeRunning || !rainWindow || rainWindow.isDestroyed() || rainWindow.webContents.isLoading()) return;
+  if (process.platform !== 'win32' || !store.settings.rainEnabled || rainSurfaceProbeRunning || rainWindows.size === 0) return;
   rainSurfaceProbeRunning = true;
   try {
     const displays = screen.getAllDisplays();
@@ -576,8 +578,18 @@ async function updateRainWindowSurfaces() {
     };
     bounds.width = bounds.right - bounds.x; bounds.height = bounds.bottom - bounds.y;
     const result = await systemServices.getRainWindowSurfaces(process.pid, bounds);
-    if (rainWindow && !rainWindow.isDestroyed() && result && Array.isArray(result.surfaces)) {
-      rainWindow.webContents.send('nova:rain-surfaces', result.surfaces);
+    if (!result || !Array.isArray(result.surfaces)) return;
+    for (const display of displays) {
+      const overlay = rainWindows.get(display.id);
+      if (!overlay || overlay.isDestroyed() || overlay.webContents.isLoading()) continue;
+      const localSurfaces = result.surfaces.flatMap((surface) => {
+        const left = Math.max(surface.x + bounds.x, display.bounds.x);
+        const top = surface.y + bounds.y;
+        const right = Math.min(surface.x + bounds.x + surface.width, display.bounds.x + display.bounds.width);
+        if (right - left < 1 || top < display.bounds.y || top >= display.bounds.y + display.bounds.height) return [];
+        return [{ ...surface, x:left - display.bounds.x, y:top - display.bounds.y, width:right-left }];
+      });
+      overlay.webContents.send('nova:rain-surfaces', localSurfaces);
     }
   } catch (error) {
     console.warn('[NOVA] Rain window surface scan failed:', error.message);
@@ -592,47 +604,57 @@ function configureRainSurfacePolling() {
   }
 }
 
-function syncRainOverlay() {
-  const enabled = Boolean(store.settings.rainEnabled);
-  configureRainSurfacePolling();
-  if (!enabled) {
-    if (rainWindow && !rainWindow.isDestroyed()) rainWindow.destroy();
-    rainWindow = null;
-    return;
-  }
-  if (rainWindow && !rainWindow.isDestroyed()) {
-    const bounds = screen.getAllDisplays().reduce((rect, display) => ({
-      x: Math.min(rect.x, display.bounds.x), y: Math.min(rect.y, display.bounds.y),
-      right: Math.max(rect.right, display.bounds.x + display.bounds.width),
-      bottom: Math.max(rect.bottom, display.bounds.y + display.bounds.height),
-    }), { x: 0, y: 0, right: 0, bottom: 0 });
-    rainWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.right - bounds.x, height: bounds.bottom - bounds.y }, false);
-    rainWindow.webContents.send('nova:rain-intensity', store.settings.rainIntensity);
-    if (!isGameHidden && !rainWindow.isVisible()) rainWindow.showInactive();
-    return;
-  }
-  const displays = screen.getAllDisplays();
-  const left = Math.min(...displays.map((display) => display.bounds.x));
-  const top = Math.min(...displays.map((display) => display.bounds.y));
-  const right = Math.max(...displays.map((display) => display.bounds.x + display.bounds.width));
-  const bottom = Math.max(...displays.map((display) => display.bounds.y + display.bounds.height));
-  rainWindow = new BrowserWindow({
-    x: left, y: top, width: right - left, height: bottom - top,
-    title: 'NOVA Rain', frame: false, transparent: true, backgroundColor: '#00000000',
+function createRainOverlay(display) {
+  const displayId = display.id;
+  const bounds = { ...display.bounds };
+  const overlay = new BrowserWindow({
+    ...bounds,
+    title: `NOVA Rain ${displayId}`, frame: false, transparent: true, backgroundColor: '#00000000',
     hasShadow: false, resizable: false, movable: false, minimizable: false,
     maximizable: false, fullscreenable: false, focusable: false, skipTaskbar: true,
     show: false, alwaysOnTop: true,
     webPreferences: { preload: path.join(__dirname, 'rain-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false },
   });
-  rainWindow.setMenu(null);
-  rainWindow.setAlwaysOnTop(true, process.platform === 'win32' ? 'screen-saver' : 'floating');
-  rainWindow.setIgnoreMouseEvents(true);
-  try { rainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch { /* Not supported on every platform. */ }
-  rainWindow.loadFile(path.join(__dirname, 'rain.html'), { query: { intensity: store.settings.rainIntensity } });
-  rainWindow.once('ready-to-show', () => {
-    if (rainWindow && !rainWindow.isDestroyed() && !isGameHidden) rainWindow.showInactive();
+  rainWindows.set(displayId, overlay);
+  overlay.setMenu(null);
+  overlay.setAlwaysOnTop(true, process.platform === 'win32' ? 'screen-saver' : 'floating');
+  overlay.setIgnoreMouseEvents(true);
+  try { overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch { /* Not supported on every platform. */ }
+  overlay.loadFile(path.join(__dirname, 'rain.html'), { query: { intensity: store.settings.rainIntensity } });
+  overlay.once('ready-to-show', () => {
+    if (rainWindows.get(displayId) === overlay && !overlay.isDestroyed() && !isGameHidden) overlay.showInactive();
   });
-  rainWindow.on('closed', () => { rainWindow = null; });
+  overlay.on('closed', () => {
+    if (rainWindows.get(displayId) === overlay) rainWindows.delete(displayId);
+  });
+}
+
+function syncRainOverlay() {
+  const enabled = Boolean(store.settings.rainEnabled);
+  configureRainSurfacePolling();
+  if (!enabled) {
+    for (const overlay of rainWindows.values()) if (!overlay.isDestroyed()) overlay.destroy();
+    rainWindows.clear();
+    return;
+  }
+  const displays = screen.getAllDisplays();
+  const liveIds = new Set(displays.map((display) => display.id));
+  for (const [displayId, overlay] of rainWindows.entries()) {
+    if (!liveIds.has(displayId) || overlay.isDestroyed()) {
+      if (!overlay.isDestroyed()) overlay.destroy();
+      rainWindows.delete(displayId);
+    }
+  }
+  for (const display of displays) {
+    const overlay = rainWindows.get(display.id);
+    if (overlay && !overlay.isDestroyed()) {
+      overlay.setBounds({ ...display.bounds }, false);
+      if (!overlay.webContents.isLoading()) overlay.webContents.send('nova:rain-intensity', store.settings.rainIntensity);
+      if (!isGameHidden && !overlay.isVisible()) overlay.showInactive();
+    } else {
+      createRainOverlay(display);
+    }
+  }
 }
 
 function createWindow() {
@@ -1513,8 +1535,8 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
-  if (rainWindow && !rainWindow.isDestroyed()) rainWindow.destroy();
-  rainWindow = null;
+  for (const overlay of rainWindows.values()) if (!overlay.isDestroyed()) overlay.destroy();
+  rainWindows.clear();
   if (rainSurfaceTimer) clearInterval(rainSurfaceTimer);
   rainSurfaceTimer = null;
   if (clipboardTimer) clearInterval(clipboardTimer);

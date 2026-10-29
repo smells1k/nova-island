@@ -1,6 +1,6 @@
 {
   "name": "nova-island",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "A polished floating desktop island with local tasks, focus sessions, clipboard history, notes, files, and media.",
   "main": "main.js",
   "author": "NOVA",
