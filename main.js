@@ -137,7 +137,8 @@ function loadStore() {
     ...DEFAULT_SETTINGS,
     ...(saved && saved.settings && typeof saved.settings === 'object' ? saved.settings : {}),
   };
-  settings.focusTimer = normalizeFocusTimer(settings.focusTimer);
+  // Focus timer removed from the interface in v1.6; discard any previous running session.
+  settings.focusTimer = normalizeFocusTimer(DEFAULT_SETTINGS.focusTimer);
   settings.liquidGlassEnabled = Boolean(settings.liquidGlassEnabled);
   settings.rainEnabled = Boolean(settings.rainEnabled);
   settings.rainIntensity = ['light', 'normal', 'storm'].includes(settings.rainIntensity) ? settings.rainIntensity : 'normal';
@@ -257,8 +258,7 @@ function makeWindowBounds(isExpanded) {
   const area = display.workArea;
   const hasPinnedItems = store.items.some((item) => item.pinned);
   const hasActiveMedia = Boolean(store.settings.mediaPlayerItemId);
-  const focusRunning = Boolean(store.settings.focusTimer && store.settings.focusTimer.running);
-  const baseCollapsedWidth = hasPinnedItems || hasActiveMedia ? 340 : (focusRunning ? 304 : 224);
+  const baseCollapsedWidth = hasPinnedItems || hasActiveMedia ? 340 : 224;
   const pulseWidth = clipboardPulseUntil > Date.now() ? 284 : 0;
   const collapsedWidth = Math.max(baseCollapsedWidth, pulseWidth);
   const width = Math.min(isExpanded ? 446 : collapsedWidth, Math.max(190, area.width - 8));

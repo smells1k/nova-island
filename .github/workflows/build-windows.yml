@@ -60,4 +60,4 @@ jobs:
           $version = (Get-Content package.json | ConvertFrom-Json).version
           $installer = Get-ChildItem release -Filter '*.exe' | Select-Object -ExpandProperty FullName
           if (-not $installer) { throw 'Installer was not produced.' }
-          gh release create "v$version" $installer --title "NOVA Island $version — Liquid Glass и дождь" --notes "Новые категории библиотеки с подкатегориями и сортировкой, оформление Liquid Glass и дождевой слой с физикой капель на окнах и меню Пуск. Установщик для Windows x64." --target $env:GITHUB_SHA
+          gh release create "v$version" $installer --title "NOVA Island $version — буфер в фокусе" --notes "Буфер открывается сразу при запуске; текст можно читать целиком прямо в списке. Таймер убран из главного интерфейса, добавлено компактное меню быстрых действий, Liquid Glass теперь работает и на свёрнутой капсуле. Установщик для Windows x64." --target $env:GITHUB_SHA

@@ -201,7 +201,7 @@
     .focus-progress > span { display:block; width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--violet),var(--mint)); transition:width .4s linear; }
     .focus-card.is-running .focus-icon { animation:focus-glow 1.8s ease-in-out infinite; }
     @keyframes focus-glow { 50% { box-shadow:0 0 17px rgba(181,168,255,.22); } }
-    .quick-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; flex:0 0 auto; margin-top:12px; }
+    .quick-actions { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; flex:0 0 auto; margin-top:0; }
     .quick-action {
       min-width:0; height:47px; padding:0 10px; display:flex; align-items:center; justify-content:center; gap:7px;
       border:1px solid rgba(255,255,255,.075); border-radius:14px;
@@ -213,6 +213,18 @@
     .quick-action:nth-child(2) svg { color:#88e6c5; }
     .quick-action:nth-child(3) svg { color:#ffbd8a; }
     .quick-action:hover { transform:translateY(-2px); border-color:rgba(181,168,255,.27); background:rgba(255,255,255,.075); box-shadow:0 7px 18px rgba(0,0,0,.16); }
+    .collection-tools { flex:0 0 auto; margin:3px 0 2px; border:1px solid rgba(255,255,255,.065); border-radius:10px; background:rgba(255,255,255,.018); }
+    .collection-tools > summary { min-height:27px; display:flex; align-items:center; gap:6px; padding:0 8px; color:#b7b9c7; font-size:8px; font-weight:600; list-style:none; cursor:pointer; }
+    .collection-tools > summary::-webkit-details-marker { display:none; }
+    .collection-tools > summary::after { content:"⌄"; margin-left:auto; color:#818595; font-size:11px; transition:transform .16s ease; }
+    .collection-tools[open] > summary::after { transform:rotate(180deg); }
+    .collection-tools > summary .tools-plus { color:var(--violet); font-size:13px; }
+    .collection-tools > summary small { color:#747888; font-size:7px; font-weight:450; }
+    .collection-tools[open] { padding-bottom:7px; border-color:rgba(181,168,255,.13); background:rgba(255,255,255,.025); }
+    .collection-tools .quick-actions { margin:0 7px; }
+    .collection-tools .quick-action { height:35px; gap:5px; padding:0 4px; border-radius:10px; }
+    .collection-tools .quick-action span { font-size:8px; }
+    .collection-tools .drop-strip { margin:6px 7px 0; height:36px; }
 
     .drop-strip {
       margin-top:11px; height:49px; flex:0 0 auto; padding:0 11px;
@@ -290,7 +302,8 @@
     .item-title-row { display:flex; align-items:center; min-width:0; gap:5px; }
     .item-title { color:#ececf3; font-size:10px; font-weight:600; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
     .pin-mark { color:#b9acff; flex:0 0 auto; }
-    .item-preview { color:#858997; font-size:9px; line-height:1.3; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .item-preview { color:#858997; font-size:9px; line-height:1.35; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .item-preview.is-expanded { max-height:132px; overflow:auto; padding:5px 7px; border-left:2px solid rgba(181,168,255,.35); border-radius:0 6px 6px 0; color:#c4c6d2; background:rgba(0,0,0,.15); white-space:pre-wrap; overflow-wrap:anywhere; user-select:text; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.16) transparent; }
     .item-meta { display:flex; align-items:center; gap:6px; color:#666b79; font-size:8px; line-height:1; }
     .item-meta .meta-dot { width:2px; height:2px; border-radius:50%; background:#555968; }
     .item-actions { display:flex; align-items:center; gap:2px; flex:0 0 auto; opacity:.78; transform:translateX(0); transition:opacity .2s ease,transform .2s ease; }
@@ -745,6 +758,26 @@
       .planner-tip { display:none; }
       .task-list { min-height:60px; }
     }
+    /* Collection-first layout: keep the saved items visible without scrolling past widgets. */
+    .home-view { padding-top:7px; }
+    #homeView > .hero, #homeView > #focusCard { display:none !important; }
+    #plannerView .planner-tip, #plannerView .task-action.start-focus { display:none !important; }
+    .collapsed-focus-toggle, .collapsed-focus-tag { display:none !important; }
+    .island.has-focus-timer:not(.has-collapsed-preview):not(.expanded) { width:224px !important; }
+    .island.has-focus-timer:not(.expanded) .collapsed-subtitle { display:none !important; }
+    .item.is-text-expanded { align-items:flex-start; border-color:rgba(181,168,255,.2); background:linear-gradient(120deg,rgba(151,132,255,.07),rgba(255,255,255,.035)); }
+    .item.is-text-expanded .item-icon { margin-top:2px; }
+    .item.is-text-expanded .item-main { padding-top:2px; }
+    .preview-toggle.is-active { color:#d6ceff; background:rgba(151,132,255,.12); }
+    :root[data-liquid-glass="true"] .island {
+      border-color:rgba(230,235,255,.3);
+      background:linear-gradient(145deg,rgba(118,124,158,.66),rgba(34,37,55,.7) 52%,rgba(20,23,35,.78)),radial-gradient(110% 110% at 15% 0%,rgba(194,179,255,.3),transparent 65%);
+      backdrop-filter:blur(28px) saturate(1.75);
+      -webkit-backdrop-filter:blur(28px) saturate(1.75);
+      box-shadow:0 15px 50px rgba(0,0,0,.55),0 0 34px rgba(143,129,255,.22),inset 0 1px rgba(255,255,255,.32),inset 0 -1px rgba(255,255,255,.08);
+    }
+    :root[data-liquid-glass="true"] .island:not(.expanded)::before { background:linear-gradient(125deg,rgba(255,255,255,.21),rgba(255,255,255,.02) 34%,transparent 62%,rgba(202,218,255,.1)); }
+    :root[data-liquid-glass="true"] .island.expanded { background:linear-gradient(145deg,rgba(105,111,143,.68),rgba(24,26,39,.72) 45%,rgba(14,17,28,.8)),radial-gradient(110% 80% at 12% 0%,rgba(183,169,255,.27),transparent 62%); }
   </style>
 </head>
 <body>
@@ -867,6 +900,7 @@
             <button class="quick-action" data-action="new-note"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg><span>Заметка</span></button>
             <button class="quick-action" data-action="new-text"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h7M7 17h4"/></svg><span>Текст</span></button>
             <button class="quick-action" data-action="add-file"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M12 12v6m-3-3h6"/></svg><span>Файл</span></button>
+            <button class="quick-action" data-action="toggle-clipboard"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5M9 10h6M9 14h6M9 18h3"/></svg><span id="quickClipboardLabel">Пауза буфера</span></button>
           </div>
 
           <button class="drop-strip" data-action="add-file" aria-label="Добавить файл">
@@ -893,6 +927,9 @@
           </div>
           <div id="categorySubfilters" class="category-subfilters" aria-label="Подкатегории"></div>
           <div id="categoryDescription" class="category-description">Вся коллекция · файлы, буфер, заметки и медиа в одном месте</div>
+          <details id="collectionTools" class="collection-tools">
+            <summary><span class="tools-plus">＋</span><span>Добавить</span><small>заметку · текст · файл</small></summary>
+          </details>
 
           <div class="list-heading"><span id="listHeading">ПОСЛЕДНЕЕ</span><span class="list-tools"><label class="sort-control" aria-label="Порядок элементов"><select id="itemSort" aria-label="Сортировка"><option value="recent">Сначала новые</option><option value="name">По имени</option><option value="size">По размеру</option></select></label><span class="live-status"><i class="live-dot"></i><span id="clipboardStatus">Буфер активен</span></span></span></div>
           <div id="itemsList" class="items-list" aria-live="polite"></div>
@@ -1007,7 +1044,7 @@
             </div>
             <div class="setting-card">
               <div class="setting-row">
-                <div class="setting-text"><div class="setting-title">Liquid Glass · стиль iOS</div><div class="setting-description">Полупрозрачное матовое стекло, глубина, блики и насыщенное размытие. Эффект применяется к панели и карточкам.</div></div>
+                <div class="setting-text"><div class="setting-title">Liquid Glass · стиль iOS</div><div class="setting-description">Полупрозрачное матовое стекло, глубина и блики. Работает и на раскрытой панели, и на свёрнутой капсуле.</div></div>
                 <button class="toggle" id="liquidGlassToggle" data-action="toggle-liquid-glass" role="switch" aria-label="Liquid Glass" aria-checked="false"><span></span></button>
               </div>
             </div>
@@ -1153,9 +1190,15 @@
       const mediaVolume = $('#mediaVolume');
       const mediaToggleButton = $('#mediaToggleButton');
       const collapsedMediaToggle = $('#collapsedMediaToggle');
+      const collectionTools = $('#collectionTools');
+      collectionTools.append($('.quick-actions'), $('.drop-strip'));
       const nativeAPI = window.novaAPI || null;
       const previewKey = 'nova-island-preview-v1';
-      let activeFilter = 'all';
+      let activeFilter = 'clipboard';
+      try {
+        const savedFilter = localStorage.getItem('nova-island-library-filter-v1');
+        if (['all','files','clipboard','notes','media','pinned'].includes(savedFilter)) activeFilter = savedFilter;
+      } catch (_) {}
       let activeSubfilter = 'all';
       let itemSort = 'recent';
       try {
@@ -1164,6 +1207,7 @@
       } catch (_) {}
       $('#itemSort').value = itemSort;
       let activeTaskFilter = 'today';
+      const expandedTextIds = new Set();
       let activeView = 'home';
       let composerKind = 'note';
       let dragDepth = 0;
@@ -1256,6 +1300,8 @@
           'volume-off':'<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 9 5 6m0-6-5 6"/>',
           storage:'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
           copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
+          eye:'<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/>',
+          eyeOff:'<path d="m3 3 18 18M10.6 6.2A10.7 10.7 0 0 1 12 6c6.5 0 10 6 10 6a16 16 0 0 1-3.1 3.7M6.2 6.3C3.5 8 2 12 2 12s3.5 6 10 6c1.1 0 2.1-.2 3-.5"/>',
           pin:'<path d="m16 3 5 5-4 1-4 4-1 5-2-2-2 2 1-5 4-4 1-4Z"/><path d="m9 15-5 6"/>',
           trash:'<path d="M4 7h16M10 11v6M14 11v6M5 7l1 14h12l1-14M9 7V4h6v3"/>',
           open:'<path d="M14 3h7v7M21 3l-9 9"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
@@ -1402,14 +1448,19 @@
         const primaryAction = isMedia ? 'play-media' : (isStoredFile ? 'open' : 'copy');
         const primaryLabel = isMedia ? 'Воспроизвести' : (isStoredFile ? 'Открыть' : 'Скопировать');
         const fileActions = isStoredFile ? `<button class="item-action" data-action="copy" data-id="${id}" aria-label="Скопировать" title="Скопировать файл">${icon('copy', 13)}</button><button class="item-action" data-action="reveal" data-id="${id}" aria-label="Показать в Проводнике" title="Показать в Проводнике">${icon('folder', 13)}</button>` : '';
-        return `<article class="item" data-id="${id}" tabindex="0" role="button" aria-label="${name}" style="animation-delay:${Math.min(index, 5) * 28}ms">
+        const canExpandText = kind === 'text' || kind === 'note';
+        const isTextExpanded = canExpandText && expandedTextIds.has(item.id);
+        const previewToggle = canExpandText ? `<button class="item-action preview-toggle${isTextExpanded ? ' is-active' : ''}" data-action="preview" data-id="${id}" aria-label="${isTextExpanded ? 'Свернуть текст' : 'Показать весь текст'}" aria-pressed="${isTextExpanded}" title="${isTextExpanded ? 'Свернуть текст' : 'Показать весь текст'}">${icon(isTextExpanded ? 'eyeOff' : 'eye', 13)}</button>` : '';
+        const previewContent = isTextExpanded ? (item.content || 'Нет текста') : itemPreview(item);
+        return `<article class="item${isTextExpanded ? ' is-text-expanded' : ''}" data-id="${id}" tabindex="0" role="button" aria-label="${name}" style="animation-delay:${Math.min(index, 5) * 28}ms">
           <span class="item-icon kind-${kind}${isMedia ? `-${item.mediaType === 'video' ? 'video' : 'audio'}` : ''}">${itemIcon(item)}</span>
           <span class="item-main">
             <span class="item-title-row"><span class="item-title">${name}</span>${pinned}</span>
-            <span class="item-preview">${escapeHtml(itemPreview(item))}</span>
+            <span class="item-preview${isTextExpanded ? ' is-expanded' : ''}">${escapeHtml(previewContent)}</span>
             <span class="item-meta"><span>${escapeHtml(copiedFrom)}</span><i class="meta-dot"></i><span>${escapeHtml(formatTime(item.createdAt))}</span></span>
           </span>
           <span class="item-actions">
+            ${previewToggle}
             <button class="item-action" data-action="${primaryAction}" data-id="${id}" aria-label="${primaryLabel}" title="${primaryLabel}">${icon(isMedia ? 'play' : (primaryAction === 'open' ? 'open' : 'copy'), 13)}</button>
             ${fileActions}
             <button class="item-action ${item.pinned ? 'is-pinned' : ''}" data-action="pin" data-id="${id}" aria-label="${item.pinned ? 'Открепить' : 'Закрепить'}" title="${item.pinned ? 'Открепить' : 'Закрепить'}">${icon('pin', 13)}</button>
@@ -1481,7 +1532,6 @@
           <button class="task-check" data-action="task-toggle" data-id="${id}" aria-label="${completed ? 'Вернуть в план' : 'Отметить выполненной'}: ${title}" aria-pressed="${completed}">${icon('check',12)}</button>
           <span class="task-main"><span class="task-title" title="${title}">${title}</span><span class="task-meta"><i class="task-date-dot"></i><span>${escapeHtml(status)}</span>${task.dueDate ? `<span>·</span><span>${escapeHtml(formatDayKey(task.dueDate))}</span>` : ''}</span></span>
           <span class="task-actions">
-            <button class="task-action start-focus" data-action="focus-task" data-id="${id}" aria-label="Сфокусироваться на задаче: ${title}" title="Начать 25 минут фокуса"${completed ? ' disabled' : ''}>${icon('timer',13)}</button>
             <button class="task-action danger" data-action="task-delete" data-id="${id}" aria-label="Удалить задачу: ${title}" title="Удалить задачу">${icon('trash',13)}</button>
           </span>
         </article>`;
@@ -1702,6 +1752,7 @@
         $('#collapsedCount').textContent = String((state.items || []).length).padStart(2, '0').slice(-2);
         const clipOn = Boolean(state.settings && state.settings.clipboardEnabled);
         $('#clipboardStatus').textContent = clipOn ? 'Буфер активен' : 'Буфер на паузе';
+        $('#quickClipboardLabel').textContent = clipOn ? 'Пауза буфера' : 'Включить буфер';
         const liveDot = $('.live-status .live-dot');
         liveDot.style.background = clipOn ? 'var(--mint)' : '#757987';
         liveDot.style.boxShadow = clipOn ? '0 0 0 3px rgba(140,233,202,.1), 0 0 10px rgba(140,233,202,.6)' : 'none';
@@ -2398,6 +2449,10 @@
             case 'export-backup': await runBackup('export'); break;
             case 'import-backup': await runBackup('import'); break;
             case 'copy': await copyItem(id); break;
+            case 'preview':
+              if (expandedTextIds.has(id)) expandedTextIds.delete(id); else expandedTextIds.add(id);
+              renderItems();
+              break;
             case 'open': await openItem(id); break;
             case 'reveal':
               if (nativeAPI) await nativeAPI.revealItem(id); else showToast('В приложении файл откроется в Проводнике');
@@ -2454,6 +2509,7 @@
         if (filterButton) {
           activeFilter = filterButton.dataset.filter;
           activeSubfilter = 'all';
+          try { localStorage.setItem('nova-island-library-filter-v1', activeFilter); } catch (_) {}
           render();
           return;
         }
@@ -2563,6 +2619,7 @@
             const filters = ['all','files','clipboard','notes','media','pinned'];
             activeFilter = filters[Number(key) - 1];
             activeSubfilter = 'all';
+            try { localStorage.setItem('nova-island-library-filter-v1', activeFilter); } catch (_) {}
             render();
             return;
           }
