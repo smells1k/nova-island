@@ -1,0 +1,45 @@
+name: Build Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - arena/04ae8aff-nova-island
+    paths:
+      - 'index.html'
+      - 'main.js'
+      - 'preload.js'
+      - 'task-utils.js'
+      - 'system-services.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'assets/**'
+      - '.github/workflows/build-windows.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test
+      - name: Build NSIS installer
+        run: npm run dist:win
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-Island-Windows-x64
+          path: release/*.exe
+          if-no-files-found: error
+          retention-days: 14

@@ -222,8 +222,11 @@
     .search-box input::placeholder { color:#777b89; }
     .search-shortcut { border:1px solid rgba(255,255,255,.09); border-radius:5px; padding:2px 5px; color:#6d7180; font-size:8px; white-space:nowrap; }
 
-    .filter-row { display:flex; align-items:center; gap:6px; overflow-x:auto; scrollbar-width:none; flex:0 0 auto; margin-top:10px; padding:0 1px 1px; }
+    .filter-row { display:flex; align-items:stretch; gap:8px; overflow-x:auto; scrollbar-width:none; flex:0 0 auto; margin-top:10px; padding:0 1px 4px; }
     .filter-row::-webkit-scrollbar { display:none; }
+    .filter-group { display:flex; align-items:center; gap:3px; flex:0 0 auto; padding:0 8px 0 0; border-right:1px solid rgba(255,255,255,.07); }
+    .filter-group:last-child { border-right:0; padding-right:0; }
+    .filter-group-label { align-self:flex-start; padding:2px 5px 0 1px; color:#646879; font-size:7px; line-height:20px; font-weight:700; letter-spacing:.08em; white-space:nowrap; }
     .filter-chip { height:24px; border-radius:8px; padding:0 9px; border:1px solid transparent; background:transparent; color:#878a99; cursor:pointer; font-size:9px; white-space:nowrap; transition:all .17s ease; }
     .filter-chip:hover { color:#d9d9e4; background:rgba(255,255,255,.045); }
     .filter-chip.active { color:#ded9ff; border-color:rgba(181,168,255,.19); background:rgba(151,132,255,.12); }
@@ -843,13 +846,10 @@
             </label>
           </div>
 
-          <div class="filter-row" role="tablist" aria-label="Фильтры">
-            <button class="filter-chip active" data-filter="all" role="tab">Всё</button>
-            <button class="filter-chip" data-filter="files" role="tab">Файлы</button>
-            <button class="filter-chip" data-filter="clipboard" role="tab">Буфер</button>
-            <button class="filter-chip" data-filter="notes" role="tab">Заметки</button>
-            <button class="filter-chip" data-filter="pinned" role="tab">Закреплённое</button>
-            <button class="filter-chip" data-filter="media" role="tab">Медиа</button>
+          <div class="filter-row" role="tablist" aria-label="Категории коллекции">
+            <div class="filter-group" role="group" aria-label="Обзор"><span class="filter-group-label">ОБЗОР</span><button class="filter-chip active" data-filter="all" role="tab" aria-selected="true">Всё</button></div>
+            <div class="filter-group" role="group" aria-label="Содержимое"><span class="filter-group-label">СОДЕРЖИМОЕ</span><button class="filter-chip" data-filter="files" role="tab" aria-selected="false">Файлы</button><button class="filter-chip" data-filter="clipboard" role="tab" aria-selected="false">Буфер</button><button class="filter-chip" data-filter="notes" role="tab" aria-selected="false">Заметки</button><button class="filter-chip" data-filter="media" role="tab" aria-selected="false">Медиа</button></div>
+            <div class="filter-group" role="group" aria-label="Быстрый доступ"><span class="filter-group-label">БЫСТРЫЙ ДОСТУП</span><button class="filter-chip" data-filter="pinned" role="tab" aria-selected="false">Закреплённое</button></div>
           </div>
 
           <div class="list-heading"><span id="listHeading">ПОСЛЕДНЕЕ</span><span class="live-status"><i class="live-dot"></i><span id="clipboardStatus">Буфер активен</span></span></div>
