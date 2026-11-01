@@ -7,6 +7,9 @@ on:
       - arena/04ae8aff-nova-island
     paths:
       - 'index.html'
+      - 'README.md'
+      - 'rain.html'
+      - 'rain-preload.js'
       - 'main.js'
       - 'preload.js'
       - 'task-utils.js'
@@ -60,4 +63,4 @@ jobs:
           $version = (Get-Content package.json | ConvertFrom-Json).version
           $installer = Get-ChildItem release -Filter '*.exe' | Select-Object -ExpandProperty FullName
           if (-not $installer) { throw 'Installer was not produced.' }
-          gh release create "v$version" $installer --title "NOVA Island $version — дождь на всех мониторах" --notes "Исправлен дождевой слой для систем с несколькими дисплеями: на каждом мониторе создаётся отдельный прозрачный overlay, геометрия окон переводится в координаты соответствующего экрана." --target $env:GITHUB_SHA
+          gh release create "v$version" $installer --title "NOVA Island $version — Dynamic Island toolbox" --notes "Компактная капсула с часами, погодой и загрузкой CPU/RAM; перемещение панели; быстрый запуск приложений; отдельная библиотека файлов и папок; скриншоты выбранной области; запись экрана и микрофона; команда CMD с подтверждением UAC; пользовательский цвет острова." --target $env:GITHUB_SHA

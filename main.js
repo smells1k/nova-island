@@ -6,6 +6,7 @@ const {
   clipboard,
   ClipboardItem,
   dialog,
+  desktopCapturer,
   globalShortcut,
   ipcMain,
   Menu,
@@ -44,6 +45,10 @@ const DEFAULT_SETTINGS = {
   liquidGlassEnabled: false,
   rainEnabled: false,
   rainIntensity: 'normal',
+  accentColor: '#b5a8ff',
+  expandedPosition: null,
+  weatherLocation: { name: 'Хабаровск', latitude: 48.48, longitude: 135.07 },
+  quickApps: [],
   mediaPlayerItemId: '',
   focusTimer: {
     mode: 'focus',
@@ -62,12 +67,20 @@ let rainWindows = new Map();
 let tray = null;
 let storePath = '';
 let libraryPath = '';
-let store = { version: STORE_VERSION, settings: { ...DEFAULT_SETTINGS }, items: [], tasks: [] };
+let store = { version: STORE_VERSION, settings: { ...DEFAULT_SETTINGS }, items: [], tasks: [], folders: [] };
+let dashboardMetrics = null;
+let dashboardWeather = null;
+let dashboardRefreshTimer = null;
+let dashboardWeatherTimer = null;
+let audioRecordApproval = false;
+let screenRecordSourceId = '';
+let preferredScreenRecordSourceId = '';
 let expanded = false;
 let isQuitting = false;
 let clipboardTimer = null;
 let focusTimerInterval = null;
 let collapseTimer = null;
+let positionSaveTimer = null;
 let fullscreenTimer = null;
 let fullscreenProbeRunning = false;
 let rainSurfaceTimer = null;
@@ -142,12 +155,23 @@ function loadStore() {
   settings.liquidGlassEnabled = Boolean(settings.liquidGlassEnabled);
   settings.rainEnabled = Boolean(settings.rainEnabled);
   settings.rainIntensity = ['light', 'normal', 'storm'].includes(settings.rainIntensity) ? settings.rainIntensity : 'normal';
+  settings.accentColor = /^#[0-9a-f]{6}$/i.test(String(settings.accentColor)) ? String(settings.accentColor) : DEFAULT_SETTINGS.accentColor;
+  const location = settings.weatherLocation && typeof settings.weatherLocation === 'object' ? settings.weatherLocation : DEFAULT_SETTINGS.weatherLocation;
+  const latitude = Number(location.latitude);
+  const longitude = Number(location.longitude);
+  settings.weatherLocation = {
+    name: safeString(location.name || DEFAULT_SETTINGS.weatherLocation.name, 60).trim() || DEFAULT_SETTINGS.weatherLocation.name,
+    latitude: Number.isFinite(latitude) ? Math.max(-90, Math.min(90, latitude)) : DEFAULT_SETTINGS.weatherLocation.latitude,
+    longitude: Number.isFinite(longitude) ? Math.max(-180, Math.min(180, longitude)) : DEFAULT_SETTINGS.weatherLocation.longitude,
+  };
+  settings.quickApps = Array.isArray(settings.quickApps) ? settings.quickApps.filter((entry) => entry && typeof entry.id === 'string' && typeof entry.path === 'string').slice(0, 16).map((entry) => ({ id: safeString(entry.id, 80), title: safeString(entry.title, 60), path: safeString(entry.path, 1000) })) : [];
   const items = Array.isArray(saved && saved.items) ? saved.items : [];
   store = {
     version: STORE_VERSION,
     settings,
     items: items.filter((item) => item && typeof item.id === 'string' && typeof item.kind === 'string'),
     tasks: taskUtils.normalizeTasks(saved && saved.tasks),
+    folders: Array.isArray(saved && saved.folders) ? [...new Set(saved.folders.map((name) => safeString(name, 60).trim()).filter(Boolean))].slice(0, 40) : [],
   };
   persistStore();
 }
@@ -194,6 +218,7 @@ function publicItem(item) {
     extension: item.extension || '',
     size: Number(item.size) || 0,
     mediaType: item.mediaType || '',
+    folder: item.folder || '',
   };
 
   if (item.kind === 'media' && item.storedPath && isInsideLibrary(item.storedPath)) {
@@ -222,7 +247,9 @@ function publicState() {
     activeMedia: activeMedia ? publicItem(activeMedia) : null,
     storage: getStorageStats(),
     tasks: (store.tasks || []).map((task) => ({ ...task })),
-    settings: { ...store.settings },
+    settings: { ...store.settings, quickApps: store.settings.quickApps.map(({ id, title }) => ({ id, title })), weatherLocation: { ...store.settings.weatherLocation } },
+    folders: [...store.folders],
+    dashboard: { metrics: dashboardMetrics, weather: dashboardWeather },
     focusTimer: focusTimerSnapshot(),
     expanded,
   };
@@ -254,23 +281,26 @@ function broadcastClipboardPulse(kind) {
 }
 
 function makeWindowBounds(isExpanded) {
-  const display = screen.getPrimaryDisplay();
+  const saved = isExpanded && store.settings.expandedPosition;
+  const hasSavedPosition = saved && Number.isFinite(Number(saved.x)) && Number.isFinite(Number(saved.y));
+  const display = hasSavedPosition
+    ? screen.getDisplayNearestPoint({ x: Number(saved.x), y: Number(saved.y) })
+    : screen.getPrimaryDisplay();
   const area = display.workArea;
   const hasPinnedItems = store.items.some((item) => item.pinned);
   const hasActiveMedia = Boolean(store.settings.mediaPlayerItemId);
-  const baseCollapsedWidth = hasPinnedItems || hasActiveMedia ? 340 : 224;
+  const baseCollapsedWidth = hasPinnedItems || hasActiveMedia ? 356 : 332;
   const pulseWidth = clipboardPulseUntil > Date.now() ? 284 : 0;
   const collapsedWidth = Math.max(baseCollapsedWidth, pulseWidth);
   const width = Math.min(isExpanded ? 446 : collapsedWidth, Math.max(190, area.width - 8));
   const height = isExpanded
     ? Math.max(420, Math.min(666, area.height - 18))
     : 64;
-  return {
-    x: Math.round(area.x + (area.width - width) / 2),
-    y: Math.round(area.y + 8),
-    width,
-    height: Math.min(height, Math.max(70, area.height - 8)),
-  };
+  const finalHeight = Math.min(height, Math.max(70, area.height - 8));
+  if (hasSavedPosition) {
+    return { x: Math.max(area.x, Math.min(area.x + area.width - width, Number(saved.x))), y: Math.max(area.y, Math.min(area.y + area.height - finalHeight, Number(saved.y))), width, height: finalHeight };
+  }
+  return { x: Math.round(area.x + (area.width - width) / 2), y: Math.round(area.y + 8), width, height: finalHeight };
 }
 
 function roundedWindowShape(width, height, radius) {
@@ -668,7 +698,7 @@ function createWindow() {
     hasShadow: false,
     ...(process.platform === 'win32' ? { thickFrame: false, roundedCorners: true } : {}),
     resizable: false,
-    movable: false,
+    movable: true,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
@@ -697,6 +727,14 @@ function createWindow() {
     applyWindowShape(false);
     mainWindow.show();
     applyMousePassthrough();
+  });
+
+  mainWindow.on('move', () => {
+    if (!expanded || !mainWindow || mainWindow.isDestroyed()) return;
+    const { x, y } = mainWindow.getBounds();
+    store.settings.expandedPosition = { x, y };
+    if (positionSaveTimer) clearTimeout(positionSaveTimer);
+    positionSaveTimer = setTimeout(() => { positionSaveTimer = null; persistStore(); }, 250);
   });
 
   mainWindow.on('close', (event) => {
@@ -1116,6 +1154,7 @@ async function exportBackup() {
         extension: item.extension || '',
         size: Number(item.size) || 0,
         mediaType: item.mediaType || '',
+        folder: item.folder || '',
       };
       if (item.storedPath && isInsideLibrary(item.storedPath)) {
         const stat = await fs.promises.stat(item.storedPath);
@@ -1146,6 +1185,7 @@ async function exportBackup() {
       settings: { mediaPlayerItemId: store.settings.mediaPlayerItemId || '' },
       items: backupItems,
       tasks: store.tasks.map((task) => ({ ...task })),
+      folders: [...store.folders],
     };
     await fs.promises.writeFile(result.filePath, JSON.stringify(backup), 'utf8');
     return { ok: true, message: `Резервная копия создана: ${backupItems.length} элементов и ${store.tasks.length} задач.` };
@@ -1177,6 +1217,7 @@ async function importBackup() {
     if (backup.items.length > MAX_ITEMS * 4) return { ok: false, message: 'В резервной копии слишком много элементов.' };
 
     const allowedKinds = new Set(['file', 'image', 'media', 'note', 'text']);
+    const backupFolders = [...new Set([...store.folders, ...(Array.isArray(backup.folders) ? backup.folders : []).map((name) => safeString(name, 60).trim()).filter((name) => name && !/[\\/]/.test(name))])].slice(0, 40);
     const existingTaskKeys = new Set(store.tasks.map((task) => `${task.title.toLocaleLowerCase('ru-RU')}\u0000${task.dueDate || ''}`));
     const importedTasks = [];
     let skippedTasks = 0;
@@ -1236,6 +1277,7 @@ async function importBackup() {
         extension: safeString(entry.record.extension || '', 12).toUpperCase(),
         size: Number(entry.record.size) || 0,
         mediaType: entry.record.mediaType === 'video' ? 'video' : (entry.record.mediaType === 'audio' ? 'audio' : ''),
+        folder: backupFolders.includes(safeString(entry.record.folder || '', 60)) ? safeString(entry.record.folder || '', 60) : '',
       };
       if (entry.bytes) {
         const targetPath = path.join(libraryPath, `${id}-${entry.fileName}`);
@@ -1250,6 +1292,7 @@ async function importBackup() {
 
     store.items = [...importedItems, ...store.items].slice(0, MAX_ITEMS);
     store.tasks = [...importedTasks, ...store.tasks].slice(0, MAX_TASKS);
+    store.folders = backupFolders;
     const previousActiveId = store.settings.mediaPlayerItemId;
     const restoredActiveId = backup.settings && idMap.get(backup.settings.mediaPlayerItemId);
     if (!previousActiveId && restoredActiveId) store.settings.mediaPlayerItemId = restoredActiveId;
@@ -1337,6 +1380,209 @@ async function setMicMonitoringEnabled(enabled) {
   return publicState();
 }
 
+function weatherCodeLabel(code) {
+  const labels = { clear: 'Ясно', clearsky: 'Ясно', fair: 'Переменная облачность', partlycloudy: 'Облачно с прояснениями', cloudy: 'Облачно', fog: 'Туман', lightrain: 'Небольшой дождь', rain: 'Дождь', rainshowers: 'Ливневый дождь', heavyrainshowers: 'Сильный ливень', heavyrain: 'Сильный дождь', lightsnow: 'Небольшой снег', lightsnowshowers: 'Небольшой снег', snowshowers: 'Снегопад', snow: 'Снег', heavysnow: 'Сильный снег', sleet: 'Мокрый снег', rainandthunder: 'Дождь с грозой', thunderstorm: 'Гроза' };
+  const token = String(code || '').toLowerCase().replace(/_(day|night|polartwilight)$/, '');
+  return labels[token] || 'Погода';
+}
+
+async function searchWeatherCity(query) {
+  const city = safeString(query, 80).trim();
+  if (city.length < 2) return { ok: false, message: 'Укажи название города.' };
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=5&language=ru&format=json`;
+  try {
+    const response = await fetch(url, { headers: { 'User-Agent': 'NOVA-Island/1.7 (https://github.com/smells1k/nova-island)' }, signal: AbortSignal.timeout(8000) });
+    if (!response.ok) throw new Error(`Weather search returned ${response.status}`);
+    const payload = await response.json();
+    const result = Array.isArray(payload.results) ? payload.results[0] : null;
+    if (!result || !Number.isFinite(Number(result.latitude)) || !Number.isFinite(Number(result.longitude))) return { ok: false, message: 'Город не найден. Попробуй уточнить название.' };
+    const name = [result.name, result.admin1 && result.admin1 !== result.name ? result.admin1 : '', result.country].filter(Boolean).join(', ');
+    store.settings.weatherLocation = { name: safeString(name, 60), latitude: Number(result.latitude), longitude: Number(result.longitude) };
+    persistStore();
+    await refreshDashboardWeather();
+    return { ok: true, state: publicState() };
+  } catch (error) {
+    return { ok: false, message: `Не удалось найти город: ${safeString(error && error.message, 100)}` };
+  }
+}
+
+async function refreshDashboardWeather() {
+  const place = store.settings.weatherLocation;
+  try {
+    const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${encodeURIComponent(place.latitude)}&lon=${encodeURIComponent(place.longitude)}`;
+    const response = await fetch(url, { headers: { 'User-Agent': 'NOVA-Island/1.7 (https://github.com/smells1k/nova-island)' }, signal: AbortSignal.timeout(8000) });
+    if (!response.ok) throw new Error(`Weather service returned ${response.status}`);
+    const payload = await response.json();
+    const now = payload && payload.properties && payload.properties.timeseries && payload.properties.timeseries[0];
+    const instant = now && now.data && now.data.instant && now.data.instant.details || {};
+    const next = now && now.data || {};
+    const symbol = next.next_1_hours && next.next_1_hours.summary && next.next_1_hours.summary.symbol_code
+      || next.next_6_hours && next.next_6_hours.summary && next.next_6_hours.summary.symbol_code || '';
+    dashboardWeather = {
+      ok: Number.isFinite(Number(instant.air_temperature)),
+      temperatureC: Number.isFinite(Number(instant.air_temperature)) ? Math.round(Number(instant.air_temperature)) : null,
+      description: weatherCodeLabel(symbol), symbol: String(symbol),
+      windSpeed: Number.isFinite(Number(instant.wind_speed)) ? Math.round(Number(instant.wind_speed)) : null,
+      precipitationMm: Number(next.next_1_hours && next.next_1_hours.details && next.next_1_hours.details.precipitation_amount) || 0,
+      location: place.name, sampledAt: Date.now(),
+    };
+  } catch (error) {
+    dashboardWeather = { ok: false, temperatureC: null, description: 'Погода недоступна', location: place.name, message: safeString(error && error.message, 120), sampledAt: Date.now() };
+  }
+  broadcastState();
+  return dashboardWeather;
+}
+
+async function refreshDashboardMetrics() {
+  try { dashboardMetrics = await systemServices.getMachineSnapshot(); }
+  catch (error) { dashboardMetrics = { ok: false, message: safeString(error && error.message, 120) }; }
+  broadcastState();
+}
+
+async function captureScreenSources() {
+  const wasVisible = Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible());
+  const wasExpanded = expanded;
+  const visibleRain = [...rainWindows.values()].filter((window) => window && !window.isDestroyed() && window.isVisible());
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
+  for (const window of visibleRain) window.hide();
+  await new Promise((resolve) => setTimeout(resolve, 220));
+  try {
+    const displays = screen.getAllDisplays();
+    const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 2560, height: 1600 }, fetchWindowIcons: false });
+    return sources.slice(0, 8).map((source, index) => {
+      const display = displays.find((candidate) => String(candidate.id) === String(source.display_id)) || displays[index] || displays[0];
+      return { id: source.id, name: source.name, displayId: source.display_id, width: source.thumbnail.getSize().width, height: source.thumbnail.getSize().height, image: source.thumbnail.toDataURL(), displayName: display ? `Экран ${displays.indexOf(display) + 1}` : source.name };
+    }).filter((source) => source.width > 0 && source.height > 0);
+  } finally {
+    for (const window of visibleRain) if (!window.isDestroyed()) window.showInactive();
+    if (wasVisible && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.showInactive();
+      if (wasExpanded) setExpanded(true, false);
+      else { mainWindow.setBounds(makeWindowBounds(false), false); applyWindowShape(false); }
+    }
+  }
+}
+
+async function getRecordScreenSources() {
+  const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1, height: 1 }, fetchWindowIcons: false });
+  const displays = screen.getAllDisplays();
+  const primary = screen.getPrimaryDisplay();
+  const primarySource = sources.find((source) => String(source.display_id) === String(primary.id)) || sources[0];
+  if (!preferredScreenRecordSourceId || !sources.some((source) => source.id === preferredScreenRecordSourceId)) {
+    preferredScreenRecordSourceId = primarySource ? primarySource.id : '';
+  }
+  if (!screenRecordSourceId) screenRecordSourceId = preferredScreenRecordSourceId;
+  return sources.slice(0, 8).map((source, index) => {
+    const display = displays.find((candidate) => String(candidate.id) === String(source.display_id)) || displays[index] || primary;
+    const displayNumber = Math.max(1, displays.indexOf(display) + 1);
+    return { id: source.id, name: `Экран ${displayNumber}${String(display.id) === String(primary.id) ? ' · основной' : ''}`, selected: source.id === preferredScreenRecordSourceId };
+  });
+}
+
+async function chooseScreenForRecording() {
+  const screens = await getRecordScreenSources();
+  const selected = screens.find((source) => source.id === preferredScreenRecordSourceId) || screens[0];
+  screenRecordSourceId = selected ? selected.id : '';
+  return selected ? { ok: true, displayName: selected.name } : { ok: false, message: 'Экраны не найдены.' };
+}
+
+async function selectRecordScreen(id) {
+  const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1, height: 1 }, fetchWindowIcons: false });
+  const selected = sources.find((source) => source.id === id);
+  if (!selected) return { ok: false, message: 'Экран больше не доступен.' };
+  preferredScreenRecordSourceId = selected.id;
+  screenRecordSourceId = selected.id;
+  return { ok: true, state: publicState() };
+}
+
+async function saveScreenshot(dataUrl) {
+  if (typeof dataUrl !== 'string' || dataUrl.length > 40 * 1024 * 1024 || !/^data:image\/(png|jpeg);base64,/i.test(dataUrl)) return { ok: false, message: 'Некорректное изображение.' };
+  const image = nativeImage.createFromDataURL(dataUrl);
+  if (image.isEmpty()) return { ok: false, message: 'Не удалось обработать скриншот.' };
+  const result = mainWindow && !mainWindow.isDestroyed()
+    ? await dialog.showSaveDialog(mainWindow, { title: 'Сохранить скриншот', defaultPath: path.join(app.getPath('pictures'), `NOVA-${new Date().toISOString().replace(/[:.]/g, '-')}.png`), filters: [{ name: 'PNG', extensions: ['png'] }] })
+    : await dialog.showSaveDialog({ title: 'Сохранить скриншот', defaultPath: path.join(app.getPath('pictures'), `NOVA-${Date.now()}.png`), filters: [{ name: 'PNG', extensions: ['png'] }] });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  await fs.promises.writeFile(result.filePath, image.toPNG());
+  return { ok: true, filePath: result.filePath };
+}
+
+function copyScreenshot(dataUrl) {
+  if (typeof dataUrl !== 'string' || dataUrl.length > 40 * 1024 * 1024 || !/^data:image\/(png|jpeg);base64,/i.test(dataUrl)) return { ok: false, message: 'Некорректное изображение.' };
+  const image = nativeImage.createFromDataURL(dataUrl);
+  if (image.isEmpty()) return { ok: false, message: 'Не удалось обработать скриншот.' };
+  clipboard.writeImage(image);
+  return { ok: true };
+}
+
+async function saveRecording(payload) {
+  const mimeType = String(payload && payload.mimeType || '').split(';')[0].toLowerCase();
+  if (!payload || !payload.data || !['video/webm', 'audio/webm', 'video/mp4', 'audio/mp4'].includes(mimeType)) return { ok: false, message: 'Формат записи не поддерживается.' };
+  const bytes = Buffer.isBuffer(payload.data) ? payload.data : Buffer.from(payload.data);
+  if (!bytes.length || bytes.length > 256 * 1024 * 1024) return { ok: false, message: 'Запись пуста или превышает лимит 256 МБ.' };
+  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+  const isVideo = mimeType.startsWith('video/');
+  const result = mainWindow && !mainWindow.isDestroyed()
+    ? await dialog.showSaveDialog(mainWindow, { title: 'Сохранить запись', defaultPath: path.join(app.getPath('videos'), `NOVA-${Date.now()}.${ext}`), filters: [{ name: ext.toUpperCase(), extensions: [ext] }] })
+    : await dialog.showSaveDialog({ title: 'Сохранить запись', defaultPath: path.join(isVideo ? app.getPath('videos') : app.getPath('music'), `NOVA-${Date.now()}.${ext}`), filters: [{ name: ext.toUpperCase(), extensions: [ext] }] });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  await fs.promises.writeFile(result.filePath, bytes);
+  return { ok: true, filePath: result.filePath };
+}
+
+async function chooseQuickApp() {
+  const result = await dialog.showOpenDialog(mainWindow, { title: 'Выберите приложение для быстрого запуска', properties: ['openFile'], filters: process.platform === 'win32' ? [{ name: 'Приложения', extensions: ['exe', 'lnk', 'bat', 'cmd'] }, { name: 'Все файлы', extensions: ['*'] }] : [{ name: 'Приложения и файлы', extensions: ['*'] }] });
+  if (result.canceled || !result.filePaths[0]) return publicState();
+  const appPath = result.filePaths[0];
+  if (store.settings.quickApps.some((entry) => entry.path.toLowerCase() === appPath.toLowerCase())) return publicState();
+  if (store.settings.quickApps.length >= 16) return publicState();
+  store.settings.quickApps.push({ id: makeId(), title: path.basename(appPath, path.extname(appPath)).slice(0, 60), path: appPath });
+  persistStore(); broadcastState(); return publicState();
+}
+
+async function launchQuickApp(id) {
+  const entry = store.settings.quickApps.find((candidate) => candidate.id === id);
+  if (!entry || !path.isAbsolute(entry.path)) return { ok: false, message: 'Ярлык не найден.' };
+  try { await fs.promises.access(entry.path, fs.constants.F_OK); }
+  catch { return { ok: false, message: 'Файл приложения не найден.' }; }
+  const error = await shell.openPath(entry.path);
+  return { ok: !error, message: error || 'Запускаю…' };
+}
+
+async function runAdminCommand(command) {
+  if (process.platform !== 'win32') return { ok: false, message: 'Запуск с повышением прав доступен только в Windows.' };
+  const text = safeString(command, 2000).trim();
+  if (!text) return { ok: false, message: 'Введите команду для CMD.' };
+  const answer = await dialog.showMessageBox(mainWindow, { type: 'warning', title: 'Команда с правами администратора', message: 'Открыть CMD от имени администратора и выполнить эту команду?', detail: `${text.slice(0, 500)}\n\nWindows покажет системный запрос UAC. Выполняйте только команды, которым доверяете.`, buttons: ['Отмена', 'Продолжить'], defaultId: 0, cancelId: 0, noLink: true });
+  if (answer.response !== 1) return { ok: false, canceled: true };
+  const cmdPath = path.join(app.getPath('temp'), `nova-admin-${crypto.randomUUID()}.cmd`);
+  await fs.promises.writeFile(cmdPath, `@echo off\r\n${text.replace(/[\r\n]+/g, '\r\n')}\r\necho.\r\necho Команда завершена.\r\npause\r\ndel "%~f0"\r\n`, 'utf8');
+  const script = `$p=Start-Process -FilePath $env:ComSpec -ArgumentList ('/k "${cmdPath}"') -Verb RunAs -PassThru;`;
+  const encoded = Buffer.from(script, 'utf16le').toString('base64');
+  try {
+    const child = require('node:child_process').spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], { detached: true, stdio: 'ignore', windowsHide: true });
+    child.unref();
+    return { ok: true, message: 'Открываю административный CMD. Подтвердите UAC в Windows.' };
+  } catch (error) {
+    await fs.promises.unlink(cmdPath).catch(() => {});
+    return { ok: false, message: safeString(error && error.message, 180) };
+  }
+}
+
+function setExpandedPosition(x, y) {
+  if (!mainWindow || mainWindow.isDestroyed() || !expanded) return false;
+  const point = { x: Math.round(Number(x) || 0), y: Math.round(Number(y) || 0) };
+  const display = screen.getDisplayNearestPoint(point);
+  const area = display.workArea;
+  const bounds = mainWindow.getBounds();
+  const nextX = Math.max(area.x, Math.min(area.x + area.width - bounds.width, point.x));
+  const nextY = Math.max(area.y, Math.min(area.y + area.height - bounds.height, point.y));
+  mainWindow.setPosition(nextX, nextY, false);
+  store.settings.expandedPosition = { x: nextX, y: nextY };
+  persistStore();
+  return true;
+}
+
 function setVisualEffects(values = {}) {
   if (Object.prototype.hasOwnProperty.call(values, 'liquidGlassEnabled')) {
     store.settings.liquidGlassEnabled = Boolean(values.liquidGlassEnabled);
@@ -1347,6 +1593,9 @@ function setVisualEffects(values = {}) {
   if (Object.prototype.hasOwnProperty.call(values, 'rainIntensity')) {
     const intensity = String(values.rainIntensity);
     if (['light', 'normal', 'storm'].includes(intensity)) store.settings.rainIntensity = intensity;
+  }
+  if (Object.prototype.hasOwnProperty.call(values, 'accentColor') && /^#[0-9a-f]{6}$/i.test(String(values.accentColor))) {
+    store.settings.accentColor = String(values.accentColor);
   }
   persistStore();
   syncRainOverlay();
@@ -1446,6 +1695,38 @@ function registerIpc() {
   ipcMain.handle('nova:set-volume-wheel', (_event, enabled) => setVolumeWheelEnabled(enabled));
   ipcMain.handle('nova:set-mic-monitoring', (_event, enabled) => setMicMonitoringEnabled(enabled));
   ipcMain.handle('nova:set-visual-effects', (_event, values) => setVisualEffects(values));
+  ipcMain.handle('nova:set-expanded-position', (_event, x, y) => setExpandedPosition(x, y));
+  ipcMain.handle('nova:create-folder', (_event, name) => {
+    const folder = safeString(name, 60).trim();
+    if (!folder || /^all$/i.test(folder) || /[\\/]/.test(folder) || store.folders.length >= 40) return { ok: false, message: 'Имя папки недопустимо, зарезервировано или достигнут лимит.' };
+    if (store.folders.some((entry) => entry.toLocaleLowerCase() === folder.toLocaleLowerCase())) return { ok: false, message: 'Такая папка уже существует.' };
+    store.folders.push(folder); persistStore(); broadcastState(); return { ok: true, state: publicState() };
+  });
+  ipcMain.handle('nova:assign-folder', (_event, id, name) => {
+    const item = store.items.find((candidate) => candidate.id === id);
+    const folder = safeString(name, 60).trim();
+    if (!item || !['file', 'image', 'media'].includes(item.kind) || (folder && !store.folders.includes(folder))) return { ok: false, message: 'Не удалось переместить элемент.' };
+    item.folder = folder; persistStore(); broadcastState(); return { ok: true, state: publicState() };
+  });
+  ipcMain.handle('nova:choose-quick-app', () => chooseQuickApp());
+  ipcMain.handle('nova:launch-quick-app', (_event, id) => launchQuickApp(id));
+  ipcMain.handle('nova:remove-quick-app', (_event, id) => {
+    store.settings.quickApps = store.settings.quickApps.filter((entry) => entry.id !== id); persistStore(); broadcastState(); return publicState();
+  });
+  ipcMain.handle('nova:run-admin-command', (_event, command) => runAdminCommand(command));
+  ipcMain.handle('nova:capture-screens', () => captureScreenSources());
+  ipcMain.handle('nova:prepare-record-source', () => chooseScreenForRecording());
+  ipcMain.handle('nova:get-record-screens', () => getRecordScreenSources());
+  ipcMain.handle('nova:select-record-screen', (_event, id) => selectRecordScreen(id));
+  ipcMain.handle('nova:set-weather-city', (_event, city) => searchWeatherCity(city));
+  ipcMain.handle('nova:save-screenshot', (_event, dataUrl) => saveScreenshot(dataUrl));
+  ipcMain.handle('nova:copy-screenshot', (_event, dataUrl) => copyScreenshot(dataUrl));
+  ipcMain.handle('nova:save-recording', (_event, payload) => saveRecording(payload));
+  ipcMain.handle('nova:approve-audio-recording', async () => {
+    const answer = await dialog.showMessageBox(mainWindow, { type: 'warning', title: 'Запись с микрофона', message: 'Разрешить NOVA записать звук с микрофона?', detail: 'Запись остаётся на этом компьютере. После завершения выберите, куда сохранить файл. Перед отправкой разговора убедитесь, что участники дали согласие.', buttons: ['Не разрешать', 'Разрешить один раз'], defaultId: 0, cancelId: 0, noLink: true });
+    audioRecordApproval = answer.response === 1;
+    return audioRecordApproval;
+  });
   ipcMain.handle('nova:get-system-snapshot', async () => {
     try { return { ...(await systemServices.getMachineSnapshot()), appVersion: app.getVersion() }; }
     catch (error) { return { ok: false, message: error.message || 'Не удалось получить данные системы.' }; }
@@ -1511,12 +1792,29 @@ app.whenReady().then(async () => {
     const audioOnlyMicPermission = permission === 'media'
       && requestedTypes.includes('audio')
       && !requestedTypes.includes('video')
-      && Boolean(store.settings.micMonitoringEnabled);
+      && (Boolean(store.settings.micMonitoringEnabled) || audioRecordApproval);
+    if (audioOnlyMicPermission && audioRecordApproval) audioRecordApproval = false;
     callback(audioOnlyMicPermission);
   });
+  session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
+    const selectedId = screenRecordSourceId;
+    screenRecordSourceId = '';
+    if (!selectedId) { callback({}); return; }
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1, height: 1 }, fetchWindowIcons: false });
+      const selected = sources.find((source) => source.id === selectedId);
+      const audio = request && request.audioRequested && process.platform === 'win32' ? 'loopback' : undefined;
+      callback(selected ? { video: selected, ...(audio ? { audio } : {}) } : {});
+    } catch { callback({}); }
+  });
   registerIpc();
+  await chooseScreenForRecording().catch(() => {});
   createWindow();
   createTray();
+  refreshDashboardMetrics();
+  refreshDashboardWeather();
+  dashboardRefreshTimer = setInterval(refreshDashboardMetrics, 12000);
+  dashboardWeatherTimer = setInterval(refreshDashboardWeather, 30 * 60 * 1000);
   syncRainOverlay();
   screen.on('display-added', syncRainOverlay);
   screen.on('display-removed', syncRainOverlay);

@@ -1,7 +1,7 @@
 {
   "name": "nova-island",
-  "version": "1.6.1",
-  "description": "A polished floating desktop island with local tasks, focus sessions, clipboard history, notes, files, and media.",
+  "version": "1.7.0",
+  "description": "A floating desktop island with quick apps, live weather and system metrics, screen captures, recordings, files, folders, and music.",
   "main": "main.js",
   "author": "NOVA",
   "license": "MIT",

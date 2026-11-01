@@ -122,9 +122,11 @@
     .collapsed-button .brand-mark svg { width:19px; height:19px; }
     .collapsed-copy { display:flex; flex-direction:column; gap:3px; min-width:0; flex:1; }
     .collapsed-title { font-size:11px; font-weight:760; letter-spacing:.19em; line-height:1; }
+    .collapsed-status { max-width:190px; overflow:hidden; color:#858998; font-size:7px; line-height:1.1; white-space:nowrap; text-overflow:ellipsis; font-variant-numeric:tabular-nums; }
     .collapsed-subtitle { display:none; align-items:center; gap:5px; min-width:0; color:#a3a5b1; font-size:9px; letter-spacing:.015em; white-space:nowrap; overflow:hidden; max-width:190px; }
     .island.has-collapsed-preview:not(.expanded) .collapsed-subtitle { display:flex; color:#c4bfdc; }
-    .island.has-collapsed-preview:not(.expanded) { width:340px; }
+    .island.has-collapsed-preview:not(.expanded) { width:356px; }
+    .island:not(.expanded):not(.has-collapsed-preview) { width:332px; }
     .island.has-focus-timer:not(.has-collapsed-preview):not(.expanded) { width:304px; }
     .island.has-focus-timer:not(.expanded) .collapsed-subtitle { display:flex; color:#a5efd6; }
     .collapsed-focus-tag { display:inline-flex; align-items:center; gap:3px; flex:0 0 auto; padding:2px 5px; border:1px solid rgba(140,233,202,.16); border-radius:99px; color:#a5efd6; background:rgba(95,196,162,.09); font-size:8px; font-variant-numeric:tabular-nums; }
@@ -155,7 +157,9 @@
       opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0);
       transition-delay: .04s;
     }
-    .topbar { display:flex; flex:0 0 31px; align-items:center; justify-content:space-between; position:relative; z-index:2; }
+    .topbar { display:flex; flex:0 0 31px; align-items:center; justify-content:space-between; position:relative; z-index:2; -webkit-app-region:drag; cursor:grab; }
+    .topbar:active { cursor:grabbing; }
+    .topbar button,.topbar input,.topbar a { -webkit-app-region:no-drag; }
     .top-brand { display:flex; align-items:center; gap:9px; min-width:0; }
     .top-brand .brand-mark { width:29px; height:29px; flex-basis:29px; border-radius:10px; }
     .top-brand .brand-mark svg { width:18px; height:18px; }
@@ -170,7 +174,9 @@
     }
     .icon-button:hover { color:#fff; background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.08); transform:translateY(-1px); }
 
-    .home-view, .settings-view { display:flex; flex:1; flex-direction:column; min-height:0; min-width:0; }
+    .home-view, .settings-view, .files-view, .tools-view { display:flex; flex:1; flex-direction:column; min-height:0; min-width:0; }
+    .files-view, .tools-view { display:none; padding-top:12px; }
+    .files-view.visible, .tools-view.visible { display:flex; }
     .home-view { padding-top:16px; }
     .settings-view { display:none; padding-top:14px; }
     .settings-view.visible { display:flex; }
@@ -366,10 +372,60 @@
     .footer-shortcut kbd { padding:3px 5px; border:1px solid rgba(255,255,255,.09); border-radius:5px; color:#9699a7; font:inherit; background:rgba(255,255,255,.035); }
 
     .main-tabs { display:flex; align-items:center; gap:5px; flex:0 0 30px; margin-top:8px; padding:2px; border:1px solid rgba(255,255,255,.055); border-radius:11px; background:rgba(0,0,0,.16); }
-    .main-tab { height:24px; min-width:0; flex:1; padding:0 9px; border:1px solid transparent; border-radius:8px; color:#858998; background:transparent; font-size:9px; cursor:pointer; white-space:nowrap; transition:all .18s ease; }
+    .main-tab { height:26px; min-width:0; flex:1; display:flex; align-items:center; justify-content:center; gap:4px; padding:0 4px; border:1px solid transparent; border-radius:8px; color:#858998; background:transparent; font-size:8px; cursor:pointer; white-space:nowrap; transition:all .18s ease; }
+    .main-tab svg { flex:0 0 auto; }
+    .main-tab span { overflow:hidden; text-overflow:ellipsis; }
     .main-tab:hover { color:#e5e3f1; background:rgba(255,255,255,.045); }
     .main-tab.active { color:#e4e0ff; border-color:rgba(181,168,255,.16); background:rgba(151,132,255,.11); }
     .expanded-view.settings-active .main-tabs { display:none; }
+    .tool-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto; padding:0 2px 9px; }
+    .tool-heading h2 { margin:0; color:#f1f0f8; font-size:16px; font-weight:640; letter-spacing:-.04em; }
+    .tool-heading p { margin:3px 0 0; color:#838795; font-size:8px; }
+    .folder-filters { display:flex; gap:5px; flex:0 0 auto; overflow-x:auto; padding:0 1px 7px; scrollbar-width:none; }
+    .folder-filters::-webkit-scrollbar { display:none; }
+    .folder-chip { flex:0 0 auto; height:24px; padding:0 9px; border:1px solid rgba(255,255,255,.08); border-radius:8px; color:#9497a5; background:rgba(255,255,255,.035); font-size:8px; cursor:pointer; }
+    .folder-chip.active { color:#e6e0ff; border-color:rgba(181,168,255,.27); background:rgba(151,132,255,.12); }
+    .files-list,.tools-scroll { display:flex; flex:1; flex-direction:column; gap:7px; min-height:0; overflow:auto; padding:0 2px 4px 0; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.13) transparent; }
+    .folder-select { max-width:88px; height:21px; padding:0 3px; border:1px solid rgba(255,255,255,.07); border-radius:6px; color:#a7a9b6; background:#151620; font-size:7px; }
+    .tool-card { flex:0 0 auto; margin-bottom:8px; padding:11px; border:1px solid rgba(255,255,255,.07); border-radius:14px; background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.02)); }
+    .tool-card-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:9px; }
+    .tool-card-heading div { min-width:0; display:flex; flex-direction:column; gap:3px; }
+    .tool-card-heading strong { color:#eceaf7; font-size:10px; font-weight:650; }
+    .tool-card-heading span { color:#818594; font-size:8px; line-height:1.35; }
+    .tool-add { width:24px; height:24px; border:1px solid rgba(181,168,255,.22); border-radius:8px; color:#ddd6ff; background:rgba(151,132,255,.12); font-size:17px; line-height:1; cursor:pointer; }
+    .quick-app-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+    .quick-app { min-width:0; min-height:42px; display:flex; align-items:center; gap:2px; padding:4px; border:1px solid rgba(255,255,255,.07); border-radius:10px; color:#d8d7e3; background:rgba(0,0,0,.16); font-size:8px; }
+    .quick-app-launch { min-width:0; flex:1; display:flex; align-items:center; gap:5px; padding:3px; border:0; color:inherit; background:transparent; font-size:8px; text-align:left; cursor:pointer; }
+    .quick-app-launch span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .quick-app-glyph { color:var(--violet); }
+    .quick-app-remove { flex:0 0 auto; border:0; color:#777b88; background:transparent; font-size:12px; cursor:pointer; }
+    .quick-app-empty { grid-column:1/-1; padding:8px; color:#737786; font-size:8px; text-align:center; }
+    .tool-action-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+    .tool-action-button { min-width:0; min-height:58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:7px 4px; border:1px solid rgba(255,255,255,.07); border-radius:10px; color:#c4c0d6; background:rgba(0,0,0,.16); font-size:8px; cursor:pointer; }
+    .tool-action-button:hover,.quick-app:hover { border-color:rgba(181,168,255,.28); background:rgba(151,132,255,.08); }
+    .tool-action-button i { color:var(--violet); font-size:14px; font-style:normal; }
+    .record-screen-row { display:flex; align-items:center; gap:7px; margin-top:8px; color:#9194a2; font-size:8px; }
+    .record-screen-row select { flex:1; height:24px; border:1px solid rgba(255,255,255,.08); border-radius:7px; color:#d8d6e3; background:#191a24; font-size:8px; }
+    .screen-audio-option { display:flex; align-items:center; gap:5px; margin-top:8px; color:#9194a2; font-size:8px; }
+    .screen-audio-option input { accent-color:var(--violet); }
+    .tool-action-button.is-recording { color:#ffd4d4; border-color:rgba(255,110,120,.35); background:rgba(255,80,90,.09); }
+    .admin-command-row { display:flex; gap:6px; }
+    .admin-command-row input { min-width:0; flex:1; height:31px; padding:0 9px; border:1px solid rgba(255,255,255,.08); border-radius:8px; outline:0; color:#ecebf4; background:rgba(0,0,0,.22); font-size:9px; user-select:text; }
+    .admin-command-row input:focus { border-color:rgba(181,168,255,.42); }
+    .capture-overlay { position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:12px; background:rgba(3,4,8,.86); backdrop-filter:blur(8px); }
+    .capture-overlay.visible { display:flex; }
+    .capture-dialog { width:100%; max-height:100%; display:flex; flex-direction:column; gap:8px; padding:11px; overflow:auto; border:1px solid rgba(255,255,255,.12); border-radius:15px; background:#11121a; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+    .capture-header,.capture-footer { display:flex; align-items:center; gap:7px; }
+    .capture-header strong { flex:1; color:#f0eef8; font-size:10px; }
+    .capture-header button { width:24px; height:24px; border:0; border-radius:7px; color:#aaa; background:rgba(255,255,255,.06); font-size:17px; cursor:pointer; }
+    .capture-screen-label { display:flex; align-items:center; gap:7px; color:#9799a7; font-size:8px; }
+    .capture-screen-label select { height:24px; flex:1; border:1px solid rgba(255,255,255,.08); border-radius:7px; color:#d8d6e3; background:#191a24; font-size:8px; }
+    .capture-frame { position:relative; display:grid; place-items:center; min-height:120px; max-height:380px; overflow:hidden; border:1px solid rgba(255,255,255,.1); border-radius:9px; background:#08090d; touch-action:none; }
+    .capture-frame img { display:block; max-width:100%; max-height:380px; object-fit:contain; pointer-events:none; }
+    .capture-selection { position:absolute; display:none; border:1px solid #fff; background:rgba(168,150,255,.18); box-shadow:0 0 0 9999px rgba(0,0,0,.38); pointer-events:none; }
+    .capture-footer { flex-wrap:wrap; color:#858896; font-size:7px; }
+    .capture-footer span { flex:1 1 130px; }
+    .primary-button { height:27px; padding:0 10px; border:1px solid rgba(181,168,255,.3); border-radius:8px; color:#f0edff; background:rgba(151,132,255,.18); font-size:8px; cursor:pointer; }
     .system-view { display:none; flex:1; flex-direction:column; min-width:0; min-height:0; padding-top:10px; }
     .system-view.visible { display:flex; }
     .system-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto; padding:0 2px 9px; }
@@ -451,6 +507,11 @@
     .theme-swatches { display:flex; gap:7px; margin-top:10px; }
     .theme-choice { flex:1; min-width:0; height:34px; display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid rgba(255,255,255,.075); border-radius:10px; color:#999baa; background:rgba(255,255,255,.025); font-size:8px; cursor:pointer; }
     .theme-choice:hover, .theme-choice.active { border-color:rgba(181,168,255,.28); color:#e4e1f1; background:rgba(151,132,255,.08); }
+    .custom-color-row { display:flex; align-items:center; justify-content:space-between; margin-top:9px; color:#858896; font-size:8px; }
+    .custom-color-row input { width:36px; height:24px; padding:2px; border:1px solid rgba(255,255,255,.12); border-radius:7px; background:#171822; cursor:pointer; }
+    .weather-city-row { display:flex; gap:6px; margin-top:9px; }
+    .weather-city-row input { min-width:0; flex:1; height:30px; padding:0 9px; border:1px solid rgba(255,255,255,.08); border-radius:8px; outline:0; color:#ecebf4; background:rgba(0,0,0,.22); font-size:9px; user-select:text; }
+    .weather-city-row input:focus { border-color:rgba(181,168,255,.42); }
     .theme-dot { width:9px; height:9px; flex:0 0 9px; border-radius:50%; box-shadow:0 0 10px currentColor; }
     .theme-violet { color:#b5a8ff; background:#b5a8ff; }
     .theme-cyan { color:#77ddff; background:#77ddff; }
@@ -763,7 +824,7 @@
     #homeView > .hero, #homeView > #focusCard { display:none !important; }
     #plannerView .planner-tip, #plannerView .task-action.start-focus { display:none !important; }
     .collapsed-focus-toggle, .collapsed-focus-tag { display:none !important; }
-    .island.has-focus-timer:not(.has-collapsed-preview):not(.expanded) { width:224px !important; }
+    .island.has-focus-timer:not(.has-collapsed-preview):not(.expanded) { width:332px !important; }
     .island.has-focus-timer:not(.expanded) .collapsed-subtitle { display:none !important; }
     .item.is-text-expanded { align-items:flex-start; border-color:rgba(181,168,255,.2); background:linear-gradient(120deg,rgba(151,132,255,.07),rgba(255,255,255,.035)); }
     .item.is-text-expanded .item-icon { margin-top:2px; }
@@ -795,6 +856,7 @@
             <span class="collapsed-copy">
             <span class="collapsed-title">NOVA</span>
             <span id="collapsedSubtitle" class="collapsed-subtitle">всё важное рядом</span>
+            <span id="collapsedStatus" class="collapsed-status">--:-- · CPU — · ОЗУ — · погода</span>
           </span>
           <span class="live-dot" aria-hidden="true"></span>
           <span class="count-badge" id="collapsedCount">00</span>
@@ -834,6 +896,8 @@
 
         <nav class="main-tabs" role="tablist" aria-label="Разделы NOVA">
           <button class="main-tab active" data-action="home-view" data-view="home" role="tab" aria-current="page" aria-selected="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg><span>Коллекция</span></button>
+          <button class="main-tab" data-action="files-view" data-view="files" role="tab" aria-selected="false"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><path d="M3 10h18"/></svg><span>Файлы</span></button>
+          <button class="main-tab" data-action="tools-view" data-view="tools" role="tab" aria-selected="false"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m14 7 3-3 3 3-3 3M17 7 8 16m-2-2 4 4-5 2-2-2z"/><circle cx="6" cy="6" r="3"/></svg><span>Пульт</span></button>
           <button class="main-tab" data-action="planner-view" data-view="planner" role="tab" aria-selected="false"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M16 2v4M8 2v4M3 10h18M8 14h3M8 17h7"/></svg><span>План</span><i id="taskTabCount" class="main-tab-count">0</i></button>
           <button class="main-tab" data-action="system-view" data-view="system" role="tab" aria-selected="false"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h4l3-8 5 16 3-8h5"/></svg><span>Система</span></button>
         </nav>
@@ -933,6 +997,19 @@
 
           <div class="list-heading"><span id="listHeading">ПОСЛЕДНЕЕ</span><span class="list-tools"><label class="sort-control" aria-label="Порядок элементов"><select id="itemSort" aria-label="Сортировка"><option value="recent">Сначала новые</option><option value="name">По имени</option><option value="size">По размеру</option></select></label><span class="live-status"><i class="live-dot"></i><span id="clipboardStatus">Буфер активен</span></span></span></div>
           <div id="itemsList" class="items-list" aria-live="polite"></div>
+        </section>
+
+        <section id="filesView" class="files-view" aria-label="Файлы и папки">
+          <div class="tool-heading"><div><h2>Файлы</h2><p>Твоя локальная полка и папки.</p></div><button class="secondary-button" data-action="new-folder">+ Папка</button></div>
+          <div id="folderFilters" class="folder-filters"></div>
+          <div id="filesList" class="files-list"></div>
+        </section>
+
+        <section id="toolsView" class="tools-view" aria-label="Пульт управления NOVA">
+          <div class="tool-heading"><div><h2>Пульт</h2><p>Быстрые действия и запуск приложений.</p></div></div>
+          <section class="tool-card"><div class="tool-card-heading"><div><strong>Приложения</strong><span>Добавь свои ярлыки</span></div><button class="tool-add" data-action="add-quick-app" aria-label="Добавить приложение">+</button></div><div id="quickAppList" class="quick-app-grid"></div></section>
+          <section class="tool-card"><div class="tool-card-heading"><div><strong>Захват и запись</strong><span>Запрос на запись экрана/микрофона будет показан явно</span></div></div><div class="tool-action-grid"><button class="tool-action-button" data-action="capture-region"><i>▧</i><span>Скриншот области</span></button><button id="screenRecordButton" class="tool-action-button" data-action="record-screen"><i>●</i><span>Запись экрана</span></button><button id="audioRecordButton" class="tool-action-button" data-action="record-audio"><i>♩</i><span>Запись микрофона</span></button></div><label class="record-screen-row">Экран для записи <select id="recordScreenSelect"><option value="">Основной экран</option></select></label><label class="screen-audio-option"><input id="screenAudioToggle" type="checkbox"> Добавить системный звук в запись экрана</label></section>
+          <section class="tool-card"><div class="tool-card-heading"><div><strong>Команда администратора</strong><span>Windows покажет подтверждение UAC перед запуском</span></div></div><div class="admin-command-row"><input id="adminCommandInput" type="text" maxlength="2000" placeholder="Например: ipconfig /all" aria-label="Команда CMD"><button class="secondary-button" data-action="run-admin-command">Запустить</button></div></section>
         </section>
 
         <section id="plannerView" class="planner-view" aria-label="Локальный план задач">
@@ -1041,6 +1118,12 @@
                 <button class="theme-choice" data-theme-choice="cyan" role="radio" aria-checked="false"><i class="theme-dot theme-cyan"></i><span>Океан</span></button>
                 <button class="theme-choice" data-theme-choice="sunset" role="radio" aria-checked="false"><i class="theme-dot theme-sunset"></i><span>Закат</span></button>
               </div>
+              <label class="custom-color-row" for="accentColor">Свой цвет <input id="accentColor" type="color" value="#b5a8ff" aria-label="Свой цвет острова"></label>
+            </div>
+            <div class="setting-card">
+              <div class="setting-title">Город для погоды</div>
+              <div class="setting-description">По умолчанию Хабаровск. Поиск города отправляет только введённое название сервису геокодирования.</div>
+              <div class="weather-city-row"><input id="weatherCityInput" type="text" maxlength="80" placeholder="Например, Хабаровск" aria-label="Город для прогноза погоды"><button class="secondary-button" data-action="save-weather-city">Сохранить</button></div>
             </div>
             <div class="setting-card">
               <div class="setting-row">
@@ -1155,6 +1238,14 @@
     <input id="fileInput" type="file" multiple hidden>
   </div>
 
+  <div id="captureOverlay" class="capture-overlay" aria-hidden="true">
+    <section class="capture-dialog" role="dialog" aria-modal="true" aria-label="Выбор области скриншота">
+      <div class="capture-header"><strong>Скриншот области</strong><button data-action="close-capture" aria-label="Закрыть">×</button></div>
+      <label class="capture-screen-label">Экран <select id="captureScreenSelect"></select></label>
+      <div id="captureFrame" class="capture-frame"><img id="captureImage" alt="Предпросмотр экрана"><div id="captureSelection" class="capture-selection"></div></div>
+      <div class="capture-footer"><span>Потяни мышью, чтобы выделить область</span><button class="secondary-button" data-action="capture-full">Весь экран</button><button class="secondary-button" data-action="copy-capture">Копировать</button><button class="primary-button" data-action="save-capture">Сохранить PNG</button></div>
+    </section>
+  </div>
   <script>
     (() => {
       'use strict';
@@ -1165,6 +1256,10 @@
       const plannerView = $('#plannerView');
       const settingsView = $('#settingsView');
       const systemView = $('#systemView');
+      const filesView = $('#filesView');
+      const toolsView = $('#toolsView');
+      const filesList = $('#filesList');
+      const folderFilters = $('#folderFilters');
       const itemsList = $('#itemsList');
       const taskList = $('#taskList');
       const taskForm = $('#taskForm');
@@ -1207,6 +1302,17 @@
       } catch (_) {}
       $('#itemSort').value = itemSort;
       let activeTaskFilter = 'today';
+      let activeFolder = 'all';
+      let captureSources = [];
+      let captureScreenSource = null;
+      let captureSelection = null;
+      let captureDrag = null;
+      let screenRecorder = null;
+      let audioRecorder = null;
+      let screenStream = null;
+      let audioRecordingStream = null;
+      let screenRecordingChunks = [];
+      let audioRecordingChunks = [];
       const expandedTextIds = new Set();
       let activeView = 'home';
       let composerKind = 'note';
@@ -1246,7 +1352,8 @@
           { id:'demo-task-2', title:'Сделать короткую паузу', dueDate:localDayKey(), completed:true, createdAt:demoDate(110), completedAt:demoDate(12) },
           { id:'demo-task-3', title:'Отправить черновик', dueDate:demoTomorrow, completed:false, createdAt:demoDate(18), completedAt:'' }
         ],
-          settings: { clipboardEnabled:true, launchAtLogin:false, alwaysOnTop:true, clickThroughCollapsed:false, gameMode:false, micMonitoringEnabled:false, volumeWheelEnabled:true, liquidGlassEnabled:false, rainEnabled:false, rainIntensity:'normal' },
+          settings: { clipboardEnabled:true, launchAtLogin:false, alwaysOnTop:true, clickThroughCollapsed:false, gameMode:false, micMonitoringEnabled:false, volumeWheelEnabled:true, liquidGlassEnabled:false, rainEnabled:false, rainIntensity:'normal', accentColor:'#b5a8ff', quickApps:[], weatherLocation:{name:'Хабаровск'} },
+        folders:[], dashboard:{metrics:null,weather:null},
         expanded:true
       };
 
@@ -1257,7 +1364,7 @@
         } catch (_) {}
         return JSON.parse(JSON.stringify(demoSeed));
       }
-      state = nativeAPI ? { items:[], tasks:[], settings:{clipboardEnabled:true,launchAtLogin:false,alwaysOnTop:true,clickThroughCollapsed:false,gameMode:false,micMonitoringEnabled:false,volumeWheelEnabled:true,liquidGlassEnabled:false,rainEnabled:false,rainIntensity:'normal'}, activeMedia:null, storage:{fileCount:0,totalBytes:0,orphanedFiles:0}, focusTimer:{ ...defaultFocusTimer }, expanded:false } : loadPreviewState();
+      state = nativeAPI ? { items:[], tasks:[], settings:{clipboardEnabled:true,launchAtLogin:false,alwaysOnTop:true,clickThroughCollapsed:false,gameMode:false,micMonitoringEnabled:false,volumeWheelEnabled:true,liquidGlassEnabled:false,rainEnabled:false,rainIntensity:'normal',accentColor:'#b5a8ff',quickApps:[],weatherLocation:{name:'Хабаровск'}}, activeMedia:null, folders:[], dashboard:{metrics:null,weather:null}, storage:{fileCount:0,totalBytes:0,orphanedFiles:0}, focusTimer:{ ...defaultFocusTimer }, expanded:false } : loadPreviewState();
       const themeKey = 'nova-island-theme-v1';
       let currentTheme = 'violet';
       try {
@@ -1437,7 +1544,7 @@
         return true;
       }
 
-      function itemMarkup(item, index) {
+      function itemMarkup(item, index, inFiles = false) {
         const kind = ['file','image','note','text','media'].includes(item.kind) ? item.kind : 'text';
         const name = escapeHtml(item.title || 'Без названия');
         const id = escapeHtml(item.id);
@@ -1460,6 +1567,7 @@
             <span class="item-meta"><span>${escapeHtml(copiedFrom)}</span><i class="meta-dot"></i><span>${escapeHtml(formatTime(item.createdAt))}</span></span>
           </span>
           <span class="item-actions">
+            ${inFiles ? `<select class="folder-select" data-folder-item="${id}" aria-label="Папка для ${name}"><option value="">Без папки</option>${(state.folders || []).map((folder) => `<option value="${escapeHtml(folder)}"${item.folder === folder ? ' selected' : ''}>${escapeHtml(folder)}</option>`).join('')}</select>` : ''}
             ${previewToggle}
             <button class="item-action" data-action="${primaryAction}" data-id="${id}" aria-label="${primaryLabel}" title="${primaryLabel}">${icon(isMedia ? 'play' : (primaryAction === 'open' ? 'open' : 'copy'), 13)}</button>
             ${fileActions}
@@ -1508,12 +1616,179 @@
         itemsList.innerHTML = filtered.map(itemMarkup).join('');
       }
 
+      function renderFiles() {
+        if (!filesList) return;
+        const allFiles = (state.items || []).filter((item) => ['file','image','media'].includes(item.kind));
+        const visible = allFiles.filter((item) => activeFolder === 'all' || (item.folder || '') === activeFolder);
+        const folderNames = ['all', ...(state.folders || [])];
+        folderFilters.innerHTML = folderNames.map((folder) => {
+          const label = folder === 'all' ? `Все (${allFiles.length})` : `${escapeHtml(folder)} (${allFiles.filter((item) => item.folder === folder).length})`;
+          return `<button class="folder-chip${activeFolder === folder ? ' active' : ''}" data-folder-filter="${escapeHtml(folder)}">${label}</button>`;
+        }).join('');
+        if (!visible.length) {
+          filesList.innerHTML = `<div class="empty-state"><span>${icon('folder',19)}</span><strong>${activeFolder === 'all' ? 'Файлов пока нет' : 'Папка пуста'}</strong><span>Добавь документы, изображения или музыку — они будут собраны здесь.</span><button data-action="add-file">Добавить файл</button></div>`;
+          return;
+        }
+        filesList.innerHTML = visible.map((item,index) => itemMarkup(item,index,true)).join('');
+      }
+
+      function renderQuickApps() {
+        const host = $('#quickAppList');
+        if (!host) return;
+        const apps = state.settings && Array.isArray(state.settings.quickApps) ? state.settings.quickApps : [];
+        host.innerHTML = apps.length ? apps.map((entry) => `<div class="quick-app"><button class="quick-app-launch" data-action="launch-quick-app" data-id="${escapeHtml(entry.id)}" title="Запустить ${escapeHtml(entry.title)}"><span class="quick-app-glyph">↗</span><span>${escapeHtml(entry.title)}</span></button><button class="quick-app-remove" data-action="remove-quick-app" data-id="${escapeHtml(entry.id)}" title="Удалить ярлык" aria-label="Удалить ярлык">×</button></div>`).join('') : '<div class="quick-app-empty">Ярлыков пока нет. Добавь .exe или ярлык приложения.</div>';
+      }
+
+      async function refreshRecordScreens() {
+        if(!nativeAPI || !nativeAPI.getRecordScreens) return;
+        try {
+          const screens=await nativeAPI.getRecordScreens();
+          const select=$('#recordScreenSelect');
+          if(!screens || !screens.length){ select.innerHTML='<option value="">Экран не найден</option>'; return; }
+          select.innerHTML=screens.map((screen)=>`<option value="${escapeHtml(screen.id)}">${escapeHtml(screen.name)}</option>`).join('');
+          const selected=screens.find((screen)=>screen.selected) || screens[0];
+          select.value=selected.id;
+        } catch(_) { $('#recordScreenSelect').innerHTML='<option value="">Экран не найден</option>'; }
+      }
+
+      async function openRegionCapture() {
+        if (!nativeAPI) { showToast('Скриншоты доступны в приложении NOVA'); return; }
+        try {
+          captureSources = await nativeAPI.captureScreens();
+          if (!captureSources.length) { showToast('Не удалось получить изображение экранов'); return; }
+          $('#captureScreenSelect').innerHTML = captureSources.map((source,index) => `<option value="${index}">${escapeHtml(source.displayName || source.name)}</option>`).join('');
+          $('#captureScreenSelect').value = '0';
+          renderCaptureSource();
+          $('#captureOverlay').classList.add('visible');
+          $('#captureOverlay').setAttribute('aria-hidden','false');
+        } catch (_) { showToast('Не удалось сделать скриншот'); }
+      }
+      function renderCaptureSource() {
+        captureScreenSource = captureSources[Number($('#captureScreenSelect').value)] || captureSources[0] || null;
+        captureSelection = null;
+        $('#captureImage').src = captureScreenSource ? captureScreenSource.image : '';
+        $('#captureSelection').style.display = 'none';
+      }
+      function closeRegionCapture() {
+        $('#captureOverlay').classList.remove('visible');
+        $('#captureOverlay').setAttribute('aria-hidden','true');
+        $('#captureImage').removeAttribute('src');
+        captureSelection = null;
+      }
+      function getCaptureDataUrl() {
+        const image = $('#captureImage');
+        if (!captureScreenSource || !image.naturalWidth) return '';
+        const imageRect = image.getBoundingClientRect();
+        if (!imageRect.width || !imageRect.height) return '';
+        let sx=0, sy=0, sw=image.naturalWidth, sh=image.naturalHeight;
+        if (captureSelection && captureSelection.width > 4 && captureSelection.height > 4) {
+          const scaleX=image.naturalWidth/imageRect.width, scaleY=image.naturalHeight/imageRect.height;
+          sx=Math.max(0,Math.round((captureSelection.left-imageRect.left)*scaleX));
+          sy=Math.max(0,Math.round((captureSelection.top-imageRect.top)*scaleY));
+          sw=Math.min(image.naturalWidth-sx,Math.max(1,Math.round(captureSelection.width*scaleX)));
+          sh=Math.min(image.naturalHeight-sy,Math.max(1,Math.round(captureSelection.height*scaleY)));
+        }
+        const canvas=document.createElement('canvas'); canvas.width=sw; canvas.height=sh;
+        canvas.getContext('2d').drawImage(image,sx,sy,sw,sh,0,0,sw,sh);
+        return canvas.toDataURL('image/png');
+      }
+      async function saveCapture(copyOnly=false) {
+        if (!nativeAPI) return;
+        const dataUrl=getCaptureDataUrl();
+        if (!dataUrl) { showToast('Выбери область экрана'); return; }
+        try {
+          const result=copyOnly ? await nativeAPI.copyScreenshot(dataUrl) : await nativeAPI.saveScreenshot(dataUrl);
+          if (result && result.ok) { closeRegionCapture(); showToast(copyOnly ? 'Скриншот скопирован' : 'Скриншот сохранён'); }
+          else if (!result.canceled) showToast(result.message || 'Не удалось сохранить скриншот');
+        } catch (_) { showToast('Не удалось обработать скриншот'); }
+      }
+      function setRecordingButton(button, active, label) {
+        button.classList.toggle('is-recording', active);
+        const text=button.querySelector('span'); if (text) text.textContent=active ? `Остановить ${label}` : label;
+      }
+      async function startScreenRecording() {
+        if (screenRecorder && screenRecorder.state === 'recording') { screenRecorder.stop(); return; }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia || typeof MediaRecorder === 'undefined') { showToast('Запись экрана не поддерживается этой системой'); return; }
+        try {
+          // Directly from the button click so Chromium's display-capture gesture requirement is preserved.
+          const streamPromise=navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:30 }, audio:$('#screenAudioToggle').checked });
+          screenStream=await streamPromise;
+          const mimeType=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find((type)=>MediaRecorder.isTypeSupported(type));
+          screenRecordingChunks=[];
+          screenRecorder=new MediaRecorder(screenStream,mimeType ? {mimeType} : undefined);
+          screenRecorder.ondataavailable=(event)=>{ if(event.data && event.data.size) screenRecordingChunks.push(event.data); };
+          screenRecorder.onstop=async()=>{
+            const chunks=screenRecordingChunks; screenRecordingChunks=[];
+            try {
+              if(chunks.length) {
+                const blob=new Blob(chunks,{type:screenRecorder.mimeType || 'video/webm'});
+                const result=await nativeAPI.saveRecording({mimeType:(blob.type || 'video/webm').split(';')[0],data:new Uint8Array(await blob.arrayBuffer())});
+                if(result && result.ok) showToast('Запись экрана сохранена'); else if(!result.canceled) showToast(result.message || 'Не удалось сохранить видео');
+              }
+            } catch(_){ showToast('Не удалось сохранить видео'); }
+            if(screenStream) screenStream.getTracks().forEach((track)=>track.stop());
+            screenStream=null; screenRecorder=null; setRecordingButton($('#screenRecordButton'),false,'Запись экрана');
+            nativeAPI.prepareRecordSource().catch(()=>{});
+          };
+          screenStream.getVideoTracks()[0]?.addEventListener('ended',()=>{ if(screenRecorder && screenRecorder.state==='recording') screenRecorder.stop(); });
+          screenRecorder.start(1000);
+          setRecordingButton($('#screenRecordButton'),true,'Запись экрана');
+          showToast('Идёт запись экрана');
+        } catch(error) { nativeAPI && nativeAPI.prepareRecordSource().catch(()=>{}); showToast(error && error.name==='NotAllowedError' ? 'Запись экрана отменена' : 'Не удалось начать запись экрана'); }
+      }
+      async function startAudioRecording() {
+        if(audioRecorder && audioRecorder.state==='recording'){ audioRecorder.stop(); return; }
+        if(!nativeAPI || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder==='undefined'){ showToast('Запись микрофона не поддерживается'); return; }
+        try {
+          const approved=await nativeAPI.approveAudioRecording();
+          if(!approved) return;
+          audioRecordingStream=await navigator.mediaDevices.getUserMedia({audio:true});
+          const mimeType=['audio/webm;codecs=opus','audio/webm'].find((type)=>MediaRecorder.isTypeSupported(type));
+          audioRecordingChunks=[];
+          audioRecorder=new MediaRecorder(audioRecordingStream,mimeType ? {mimeType} : undefined);
+          audioRecorder.ondataavailable=(event)=>{ if(event.data && event.data.size) audioRecordingChunks.push(event.data); };
+          audioRecorder.onstop=async()=>{
+            const chunks=audioRecordingChunks; audioRecordingChunks=[];
+            try {
+              if(chunks.length){
+                const blob=new Blob(chunks,{type:audioRecorder.mimeType || 'audio/webm'});
+                const result=await nativeAPI.saveRecording({mimeType:(blob.type || 'audio/webm').split(';')[0],data:new Uint8Array(await blob.arrayBuffer())});
+                if(result && result.ok) showToast('Аудиозапись сохранена'); else if(!result.canceled) showToast(result.message || 'Не удалось сохранить аудио');
+              }
+            } catch(_){ showToast('Не удалось сохранить аудио'); }
+            if(audioRecordingStream) audioRecordingStream.getTracks().forEach((track)=>track.stop());
+            audioRecordingStream=null; audioRecorder=null; setRecordingButton($('#audioRecordButton'),false,'Запись микрофона');
+          };
+          audioRecorder.start(1000);
+          setRecordingButton($('#audioRecordButton'),true,'Запись микрофона');
+          showToast('Микрофон записывает звук');
+        } catch(error) { showToast(error && error.name==='NotAllowedError' ? 'Доступ к микрофону отклонён' : 'Не удалось начать запись звука'); }
+      }
+      async function runAdminCommandFromUI() {
+        const input=$('#adminCommandInput');
+        const command=input.value.trim();
+        if(!command){ input.focus(); showToast('Введи команду CMD'); return; }
+        if(!nativeAPI){ showToast('Запуск от администратора доступен в Windows-приложении'); return; }
+        try { const result=await nativeAPI.runAdminCommand(command); if(result && result.ok) { input.value=''; showToast(result.message); } else if(result && !result.canceled) showToast(result.message || 'Не удалось запустить команду'); }
+        catch(_){ showToast('Не удалось запустить административный CMD'); }
+      }
+
       function renderLocalClock() {
         const now = new Date();
         $('#homeClock').textContent = now.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
         const dateLabel = now.toLocaleDateString('ru-RU', { weekday:'long', day:'numeric', month:'long' });
         $('#homeDate').textContent = dateLabel.toLocaleUpperCase('ru-RU');
         $('#plannerDate').textContent = `Сегодня · ${dateLabel}`;
+        const metrics = state && state.dashboard && state.dashboard.metrics || {};
+        const weather = state && state.dashboard && state.dashboard.weather || {};
+        const cpu = Number.isFinite(Number(metrics.cpuPercent)) ? `${Math.round(Number(metrics.cpuPercent))}%` : '—';
+        const ram = Number.isFinite(Number(metrics.ramPercent)) ? `${Math.round(Number(metrics.ramPercent))}%` : '—';
+        const temp = Number.isFinite(Number(weather.temperatureC)) ? `${Math.round(Number(weather.temperatureC))}°` : '—°';
+        const symbol = String(weather.symbol || '').toLowerCase();
+        const weatherGlyph = /rain|snow|sleet|thunder/.test(symbol) ? '☂' : /cloud|fog/.test(symbol) ? '☁' : '☀';
+        const time = now.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+        $('#collapsedStatus').textContent = `${time} · CPU ${cpu} · ОЗУ ${ram} · ${weatherGlyph} ${temp}`;
+        $('#collapsedStatus').title = `${weather.description || 'Погода'} · ${weather.location || (state && state.settings && state.settings.weatherLocation && state.settings.weatherLocation.name) || 'Хабаровск'}`;
       }
       function taskSort(a, b) {
         if (Boolean(a.completed) !== Boolean(b.completed)) return a.completed ? 1 : -1;
@@ -1740,6 +2015,8 @@
         island.classList.toggle('drag-active', dragDepth > 0);
         homeView.classList.toggle('hidden', activeView !== 'home');
         plannerView.classList.toggle('visible', activeView === 'planner');
+        filesView.classList.toggle('visible', activeView === 'files');
+        toolsView.classList.toggle('visible', activeView === 'tools');
         systemView.classList.toggle('visible', activeView === 'system');
         settingsView.classList.toggle('visible', activeView === 'settings');
         $('.expanded-view').classList.toggle('settings-active', activeView === 'settings');
@@ -1778,6 +2055,12 @@
         $('#rainToggle').classList.toggle('on', rainOn);
         $('#rainToggle').setAttribute('aria-checked', String(rainOn));
         $('#rainIntensity').value = ['light','normal','storm'].includes(state.settings && state.settings.rainIntensity) ? state.settings.rainIntensity : 'normal';
+        const accentColor = /^#[0-9a-f]{6}$/i.test(String(state.settings && state.settings.accentColor || '')) ? state.settings.accentColor : '#b5a8ff';
+        if(accentColor.toLowerCase()==='#b5a8ff') document.documentElement.style.removeProperty('--violet');
+        else document.documentElement.style.setProperty('--violet', accentColor);
+        $('#accentColor').value = accentColor;
+        const cityInput=$('#weatherCityInput');
+        if(cityInput && document.activeElement!==cityInput) cityInput.value=state.settings && state.settings.weatherLocation && state.settings.weatherLocation.name || 'Хабаровск';
         const micOn = Boolean(state.settings && state.settings.micMonitoringEnabled);
         $('#micToggle').classList.toggle('on', micOn);
         $('#micToggle').setAttribute('aria-checked', String(micOn));
@@ -1798,6 +2081,8 @@
         });
         renderLocalClock();
         renderItems();
+        renderFiles();
+        renderQuickApps();
         renderTasks();
         renderFocusTimer();
         renderMediaDock();
@@ -2435,12 +2720,31 @@
             case 'collapse': activeView = 'home'; closeComposer(); await setExpanded(false); break;
             case 'settings': openSettings(); break;
             case 'home-view': activeView = 'home'; render(); break;
+            case 'files-view': activeView = 'files'; render(); break;
+            case 'tools-view': activeView = 'tools'; await refreshRecordScreens(); render(); break;
             case 'planner-view': activeView = 'planner'; render(); break;
             case 'system-view': activeView = 'system'; render(); break;
             case 'back-home': backHome(); break;
             case 'new-note': openComposer('note'); break;
             case 'new-text': openComposer('text'); break;
             case 'add-file': addFile(); break;
+            case 'new-folder': {
+              const name=window.prompt('Название новой папки:');
+              if(name && nativeAPI){ const result=await nativeAPI.createFolder(name); if(result && result.ok){state=result.state; activeFolder=name.trim(); render(); showToast('Папка создана');} else showToast(result && result.message || 'Не удалось создать папку'); }
+              else if(name) showToast('Папки доступны в установленном приложении');
+              break;
+            }
+            case 'add-quick-app': if(nativeAPI){ const result=await nativeAPI.chooseQuickApp(); if(result) state=result; render(); } else showToast('Ярлыки приложений доступны в установленной NOVA'); break;
+            case 'launch-quick-app': if(nativeAPI){ const result=await nativeAPI.launchQuickApp(id); if(result && !result.ok) showToast(result.message); } break;
+            case 'remove-quick-app': if(nativeAPI){ state=await nativeAPI.removeQuickApp(id); render(); } break;
+            case 'capture-region': await openRegionCapture(); break;
+            case 'close-capture': closeRegionCapture(); break;
+            case 'capture-full': captureSelection=null; $('#captureSelection').style.display='none'; break;
+            case 'copy-capture': await saveCapture(true); break;
+            case 'save-capture': await saveCapture(false); break;
+            case 'record-screen': await startScreenRecording(); break;
+            case 'record-audio': await startAudioRecording(); break;
+            case 'run-admin-command': await runAdminCommandFromUI(); break;
             case 'save-composer': await saveComposer(); break;
             case 'close-modal': closeComposer(); break;
             case 'focus-toggle': await controlFocusTimer('toggle'); break;
@@ -2468,6 +2772,14 @@
             case 'toggle-click-through': await toggleClickThrough(); break;
             case 'toggle-game-mode': await toggleGameMode(); break;
             case 'toggle-volume-wheel': await toggleVolumeWheel(); break;
+            case 'save-weather-city': {
+              if(!nativeAPI){ showToast('Погода доступна в приложении'); break; }
+              const city=$('#weatherCityInput').value.trim();
+              const result=await nativeAPI.setWeatherCity(city);
+              if(result && result.ok){ state=result.state; render(); showToast(`Погода обновлена: ${state.settings.weatherLocation.name}`); }
+              else showToast(result && result.message || 'Не удалось обновить город');
+              break;
+            }
             case 'toggle-liquid-glass': await toggleLiquidGlass(); break;
             case 'toggle-rain': await toggleRain(); break;
             case 'toggle-mic': await toggleMicMonitoring(); break;
@@ -2505,6 +2817,8 @@
           showToast(`Тема: ${themeButton.querySelector('span').textContent}`);
           return;
         }
+        const folderButton = event.target.closest('[data-folder-filter]');
+        if (folderButton) { activeFolder=folderButton.dataset.folderFilter; renderFiles(); return; }
         const filterButton = event.target.closest('[data-filter]');
         if (filterButton) {
           activeFilter = filterButton.dataset.filter;
@@ -2525,6 +2839,7 @@
           renderTasks();
           return;
         }
+        if (event.target.closest('.folder-select')) return;
         const card = event.target.closest('.item[data-id]');
         if (card) await openItem(card.dataset.id);
       });
@@ -2539,6 +2854,36 @@
         try { localStorage.setItem('nova-island-sort-v1', itemSort); } catch (_) {}
         renderItems();
       });
+      $('#filesList').addEventListener('change', async (event) => {
+        const select=event.target.closest('.folder-select'); if(!select || !nativeAPI) return;
+        const result=await nativeAPI.assignFolder(select.dataset.folderItem,select.value);
+        if(result && result.ok){ state=result.state; renderFiles(); showToast(select.value ? `Перемещено в «${select.value}»` : 'Убрано из папки'); }
+      });
+      $('#captureScreenSelect').addEventListener('change',renderCaptureSource);
+      $('#recordScreenSelect').addEventListener('change',async(event)=>{ if(nativeAPI && event.target.value){ const result=await nativeAPI.selectRecordScreen(event.target.value); if(!result || !result.ok) showToast(result && result.message || 'Не удалось выбрать экран'); } });
+      $('#captureFrame').addEventListener('pointerdown',(event)=>{
+        if(!captureScreenSource) return;
+        const imageRect=$('#captureImage').getBoundingClientRect();
+        if(event.clientX<imageRect.left||event.clientX>imageRect.right||event.clientY<imageRect.top||event.clientY>imageRect.bottom) return;
+        captureDrag={x:Math.max(imageRect.left,Math.min(imageRect.right,event.clientX)),y:Math.max(imageRect.top,Math.min(imageRect.bottom,event.clientY))};
+        captureSelection={left:captureDrag.x,top:captureDrag.y,width:0,height:0};
+        $('#captureFrame').setPointerCapture(event.pointerId);
+        $('#captureSelection').style.display='block';
+      });
+      $('#captureFrame').addEventListener('pointermove',(event)=>{
+        if(!captureDrag) return;
+        const imageRect=$('#captureImage').getBoundingClientRect(), frameRect=$('#captureFrame').getBoundingClientRect();
+        const x=Math.max(imageRect.left,Math.min(imageRect.right,event.clientX)), y=Math.max(imageRect.top,Math.min(imageRect.bottom,event.clientY));
+        const left=Math.min(captureDrag.x,x), top=Math.min(captureDrag.y,y), width=Math.abs(x-captureDrag.x), height=Math.abs(y-captureDrag.y);
+        captureSelection={left,top,width,height};
+        const selection=$('#captureSelection'); selection.style.left=`${left-frameRect.left}px`; selection.style.top=`${top-frameRect.top}px`; selection.style.width=`${width}px`; selection.style.height=`${height}px`;
+      });
+      const finishCaptureDrag=()=>{ captureDrag=null; };
+      $('#captureFrame').addEventListener('pointerup',finishCaptureDrag);
+      $('#captureFrame').addEventListener('pointercancel',finishCaptureDrag);
+      $('#accentColor').addEventListener('change',async(event)=>{ const color=/^#[0-9a-f]{6}$/i.test(event.target.value)?event.target.value:'#b5a8ff'; await setVisualEffects({accentColor:color}); });
+      $('#adminCommandInput').addEventListener('keydown',(event)=>{ if(event.key==='Enter'){ event.preventDefault(); runAdminCommandFromUI(); } });
+      $('#weatherCityInput').addEventListener('keydown',(event)=>{ if(event.key==='Enter'){ event.preventDefault(); $('[data-action="save-weather-city"]').click(); } });
       $('#rainIntensity').addEventListener('change', async (event) => {
         const intensity = ['light','normal','storm'].includes(event.target.value) ? event.target.value : 'normal';
         await setVisualEffects({ rainIntensity:intensity });
@@ -2601,7 +2946,7 @@
       document.addEventListener('keydown', async (event) => {
         const modifier = event.ctrlKey || event.metaKey;
         const editing = ['INPUT','TEXTAREA'].includes(document.activeElement && document.activeElement.tagName);
-        if (modifier && !event.altKey && !modalOverlay.classList.contains('visible')) {
+        if (modifier && !event.altKey && !modalOverlay.classList.contains('visible') && !$('#captureOverlay').classList.contains('visible')) {
           const key = event.key.toLowerCase();
           if (key === 'n') {
             event.preventDefault();
@@ -2628,6 +2973,7 @@
           event.preventDefault(); await saveComposer(); return;
         }
         if (event.key === 'Escape') {
+          if ($('#captureOverlay').classList.contains('visible')) { closeRegionCapture(); return; }
           if (modalOverlay.classList.contains('visible')) { closeComposer(); return; }
           if (activeView === 'settings') { backHome(); return; }
           if (state.expanded) { await setExpanded(false); return; }
