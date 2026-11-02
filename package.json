@@ -1,6 +1,6 @@
 {
   "name": "nova-island",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "A floating desktop island with quick apps, live weather and system metrics, screen captures, recordings, files, folders, and music.",
   "main": "main.js",
   "author": "NOVA",
@@ -14,7 +14,8 @@
     "test": "node --test tests/*.test.js",
     "dist:win": "electron-builder --win nsis --x64",
     "dist:win:portable": "electron-builder --win portable --x64",
-    "pack:win": "electron-builder --win dir --x64"
+    "pack:win": "electron-builder --win dir --x64",
+    "dist:linux": "electron-builder --linux AppImage --x64"
   },
   "devDependencies": {
     "electron": "^45.1.0",
@@ -40,6 +41,19 @@
       "package.json"
     ],
     "artifactName": "NOVA-Island-Setup-${version}-${arch}.${ext}",
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Utility",
+      "icon": "assets/icon.png",
+      "artifactName": "NOVA-Island-${version}-${arch}.${ext}"
+    },
     "win": {
       "target": [
         {

@@ -1,0 +1,75 @@
+name: Build Linux AppImage
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing GitHub release tag to upload the AppImage to (defaults to the package version)
+        required: false
+        type: string
+  push:
+    branches:
+      - arena/04ae8aff-nova-island
+    paths:
+      - 'index.html'
+      - 'README.md'
+      - 'rain.html'
+      - 'rain-preload.js'
+      - 'main.js'
+      - 'preload.js'
+      - 'task-utils.js'
+      - 'system-services.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'assets/**'
+      - '.github/workflows/build-linux.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'release:')
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install AppImage runtime dependency
+        run: sudo apt-get update && sudo apt-get install -y libfuse2
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test
+      - name: Build x64 AppImage
+        run: npm run dist:linux -- --publish never
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-Island-Linux-x64-AppImage
+          path: release/*.AppImage
+          if-no-files-found: error
+          retention-days: 14
+      - name: Attach AppImage to GitHub release
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'release:')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          tag="${RELEASE_TAG:-v$version}"
+          for attempt in $(seq 1 36); do
+            if gh release view "$tag" >/dev/null 2>&1; then
+              gh release upload "$tag" release/*.AppImage --clobber
+              exit 0
+            fi
+            echo "Waiting for release $tag to be created ($attempt/36)…"
+            sleep 10
+          done
+          echo "Release $tag was not found; AppImage was built and uploaded as a workflow artifact only." >&2
+          exit 1
