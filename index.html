@@ -118,7 +118,7 @@
     }
     .brand-mark::after { content:""; position:absolute; inset:-16px; background: radial-gradient(circle at 50% 42%,rgba(185,171,255,.27),transparent 55%); }
     .brand-mark svg { position: relative; z-index: 1; }
-    .collapsed-button .brand-mark { width:30px; height:30px; flex-basis:30px; border-radius:10px; }
+    .collapsed-button .brand-mark { width:30px; height:30px; flex-basis:30px; border-radius:10px; -webkit-app-region:drag; cursor:grab; }
     .collapsed-button .brand-mark svg { width:19px; height:19px; }
     .collapsed-copy { display:flex; flex-direction:column; gap:3px; min-width:0; flex:1; }
     .collapsed-title { font-size:11px; font-weight:760; letter-spacing:.19em; line-height:1; }
@@ -846,7 +846,7 @@
     <main id="island" class="island" aria-label="NOVA Island">
       <div class="collapsed-view">
         <button class="collapsed-button" data-action="expand" aria-label="Открыть NOVA">
-          <span class="brand-mark" aria-hidden="true">
+          <span class="brand-mark" aria-hidden="true" title="Перетащи значок, чтобы переместить капсулу">
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="7.2" stroke="#c9c1ff" stroke-width="1.2" opacity=".8"/>
               <ellipse cx="12" cy="12" rx="10" ry="4.4" stroke="#a99aff" stroke-width="1" transform="rotate(-35 12 12)" opacity=".8"/>

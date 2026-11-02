@@ -1,6 +1,6 @@
 {
   "name": "nova-island",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "A floating desktop island with quick apps, live weather and system metrics, screen captures, recordings, files, folders, and music.",
   "main": "main.js",
   "author": "NOVA",

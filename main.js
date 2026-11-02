@@ -47,6 +47,7 @@ const DEFAULT_SETTINGS = {
   rainIntensity: 'normal',
   accentColor: '#b5a8ff',
   expandedPosition: null,
+  windowPosition: null,
   weatherLocation: { name: 'Хабаровск', latitude: 48.48, longitude: 135.07 },
   quickApps: [],
   mediaPlayerItemId: '',
@@ -281,10 +282,13 @@ function broadcastClipboardPulse(kind) {
 }
 
 function makeWindowBounds(isExpanded) {
-  const saved = isExpanded && store.settings.expandedPosition;
-  const hasSavedPosition = saved && Number.isFinite(Number(saved.x)) && Number.isFinite(Number(saved.y));
+  const legacyPosition = store.settings.expandedPosition;
+  const saved = store.settings.windowPosition || (legacyPosition && Number.isFinite(Number(legacyPosition.x))
+    ? { centerX: Number(legacyPosition.x) + 223, y: Number(legacyPosition.y) }
+    : null);
+  const hasSavedPosition = saved && Number.isFinite(Number(saved.centerX)) && Number.isFinite(Number(saved.y));
   const display = hasSavedPosition
-    ? screen.getDisplayNearestPoint({ x: Number(saved.x), y: Number(saved.y) })
+    ? screen.getDisplayNearestPoint({ x: Number(saved.centerX), y: Number(saved.y) })
     : screen.getPrimaryDisplay();
   const area = display.workArea;
   const hasPinnedItems = store.items.some((item) => item.pinned);
@@ -297,10 +301,14 @@ function makeWindowBounds(isExpanded) {
     ? Math.max(420, Math.min(666, area.height - 18))
     : 64;
   const finalHeight = Math.min(height, Math.max(70, area.height - 8));
-  if (hasSavedPosition) {
-    return { x: Math.max(area.x, Math.min(area.x + area.width - width, Number(saved.x))), y: Math.max(area.y, Math.min(area.y + area.height - finalHeight, Number(saved.y))), width, height: finalHeight };
-  }
-  return { x: Math.round(area.x + (area.width - width) / 2), y: Math.round(area.y + 8), width, height: finalHeight };
+  const desiredX = hasSavedPosition ? Number(saved.centerX) - width / 2 : area.x + (area.width - width) / 2;
+  const desiredY = hasSavedPosition ? Number(saved.y) : area.y + 8;
+  return {
+    x: Math.round(Math.max(area.x, Math.min(area.x + area.width - width, desiredX))),
+    y: Math.round(Math.max(area.y, Math.min(area.y + area.height - finalHeight, desiredY))),
+    width,
+    height: finalHeight,
+  };
 }
 
 function roundedWindowShape(width, height, radius) {
@@ -730,8 +738,9 @@ function createWindow() {
   });
 
   mainWindow.on('move', () => {
-    if (!expanded || !mainWindow || mainWindow.isDestroyed()) return;
-    const { x, y } = mainWindow.getBounds();
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    const { x, y, width } = mainWindow.getBounds();
+    store.settings.windowPosition = { centerX: x + width / 2, y };
     store.settings.expandedPosition = { x, y };
     if (positionSaveTimer) clearTimeout(positionSaveTimer);
     positionSaveTimer = setTimeout(() => { positionSaveTimer = null; persistStore(); }, 250);
@@ -1579,6 +1588,7 @@ function setExpandedPosition(x, y) {
   const nextY = Math.max(area.y, Math.min(area.y + area.height - bounds.height, point.y));
   mainWindow.setPosition(nextX, nextY, false);
   store.settings.expandedPosition = { x: nextX, y: nextY };
+  store.settings.windowPosition = { centerX: nextX + bounds.width / 2, y: nextY };
   persistStore();
   return true;
 }
