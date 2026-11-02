@@ -51,14 +51,14 @@ npm run dist:win
 
 ## Linux AppImage
 
-Скачай `NOVA-Island-1.7.1-x64.AppImage` из Releases, сделай файл исполняемым и запусти:
+Скачай `NOVA-Island-1.7.1-x86_64.AppImage` из Releases, сделай файл исполняемым и запусти:
 
 ```bash
-chmod +x NOVA-Island-1.7.1-x64.AppImage
-./NOVA-Island-1.7.1-x64.AppImage
+chmod +x NOVA-Island-1.7.1-x86_64.AppImage
+./NOVA-Island-1.7.1-x86_64.AppImage
 ```
 
-Для запуска AppImage системе обычно нужна поддержка FUSE 2 (на Ubuntu/Debian пакет `libfuse2`). Если FUSE недоступен, попробуй `./NOVA-Island-1.7.1-x64.AppImage --appimage-extract-and-run`. На Linux недоступны Windows-специфичные функции, такие как UAC, перезапуск Проводника и управление яркостью встроенного дисплея.
+Для запуска AppImage системе обычно нужна поддержка FUSE 2 (на Ubuntu/Debian пакет `libfuse2`). Если FUSE недоступен, попробуй `./NOVA-Island-1.7.1-x86_64.AppImage --appimage-extract-and-run`. На Linux недоступны Windows-специфичные функции, такие как UAC, перезапуск Проводника и управление яркостью встроенного дисплея.
 
 Собрать пакет из исходников можно на Linux x86_64:
 
